@@ -80,10 +80,7 @@ class RadioMap:
         for data in self.data:
             print('##################')
             for key, value in data.items():
-                if key == 'rss':
-                    print('# ', key, ': ', value[0:5], '...')
-                else:
-                    print('# ', key, ': ', value)
+                print('# ', key, ': ', value)
 
     def print_data_by_row(self, rows) -> None:
         """ Print the data from a subset of the rows."""
@@ -92,10 +89,7 @@ class RadioMap:
         for row in rows:
             print('##################')
             for key, value in self.data[row].items():
-                if key == 'rss':
-                    print('# ', key, ': ', value[0:5], '...')
-                else:
-                    print('# ', key, ': ', value)
+                print('# ', key, ': ', value)
 
     def get_rss(self) -> np.array:
         """ Return the RSS values."""
