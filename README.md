@@ -1,5 +1,7 @@
 ## WPS - Study on WiFi based Spoofing attacks
 
+### Description
+
 This repository contains a location algorithme based on WiFi fingerprints. It is used to simulate localization requests and Spoofing attacks.
 
 **Note**: This repository is still under development.
