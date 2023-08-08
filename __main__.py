@@ -28,7 +28,7 @@ def simu1_display(error_positions, error_floors):
     print("# Min error: ", np.min(error_floors))
     print("# Median error: ", np.median(error_floors))
 
-def simu1_find_error(n_neighbors, limit, row):
+def simu10_find_error(n_neighbors, limit, row):
     """ Find the mean error for a given number of neighbors and limit on the position of a row."""
     trgt_r_m = vld_r_m.fork([row])
     predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
@@ -43,7 +43,7 @@ def simu1_find_error(n_neighbors, limit, row):
         predicted_position - actual_position)
     return error_position
 
-def simu1():
+def simu10():
     """ find all the errors for all the K,LIMIT combinations."""
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
@@ -54,7 +54,7 @@ def simu1():
         for k in range(1, k_max):
             errors = []
             for row in rows:
-                error = simu1_find_error(k, limit, row)
+                error = simu10_find_error(k, limit, row)
                 if error != np.inf:
                     errors.append(error)
                 else:
@@ -77,7 +77,7 @@ def simu1():
 
     print(f"CSV file '{csv_file}' created successfully.")
 
-def simu1_bis():
+def simu10_bis():
     """ find the coverage for a k, and limit combination."""
     k = 7
     limit = 19
@@ -88,7 +88,7 @@ def simu1_bis():
     print('Total: ', len(rows))
     for row in rows:
         print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-        error = simu1_find_error(k, limit, row)
+        error = simu10_find_error(k, limit, row)
         if error != np.inf:
             errors.append(error)
         else:
@@ -97,7 +97,52 @@ def simu1_bis():
     print("K=", k, " LIMIT=", limit, " -> ", np.mean(errors))
     print("Failed: ", failed, "/", len(rows), " -> ", failed / len(rows))
 
-    
+
+def simu11():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 7
+    limit = 19
+
+    for file_index in range(1,11):
+
+        vld_X_r_m = RadioMap()
+        vld_X_r_m.load('juraj_data/ValidationData_' + str(file_index) + '.csv')
+
+
+        rows = [i for i in range(len(vld_X_r_m.get_data()))]
+
+        attack_success = 0
+        fail_due_to_attack = 0
+        fail = 0
+        unfail_due_to_attack = 0
+        attack_deviations = []
+        print('ValidationData_' + str(file_index) + '.csv')
+        for row in rows:
+            print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
+            estimated_position = knn.find_position(k, trning_r_m, vld_X_r_m.fork([row]), limit)
+            position = knn.find_position(k, trning_r_m, vld_r_m.fork([row]), limit)
+            null_pos = (position == [0,0,0]).all()
+            null_est = (estimated_position == [0,0,0]).all()
+            if (estimated_position != position).all():
+                attack_success += 1
+                if not null_est and not null_pos:
+                    attack_deviations.append(np.linalg.norm(estimated_position - position))
+            if null_est and not null_pos:
+                fail_due_to_attack += 1
+            if not null_est and null_pos:
+                unfail_due_to_attack += 1
+            if null_pos:
+                fail += 1
+            
+        print()
+        print("Number of attack successful: ", attack_success, "/", len(rows), " -> " + str(round((attack_success / len(rows)) * 100,2))+ "%")
+        print("Distance error due to attack -> ", np.mean(attack_deviations))
+        print("Number of fail due to attack: ", fail_due_to_attack, "/", len(rows), " -> " + str(round((fail_due_to_attack / len(rows)) * 100,2)) + "%")
+        print("unfail due to attack: ", unfail_due_to_attack, "/", len(rows), " -> " + str(round((unfail_due_to_attack / len(rows)) * 100,2)) + "%")
+        print("Number of fail: ", fail, "/", len(rows), " -> " + str(round((fail / len(rows)) * 100,2)) + "%")
+        print()
+
+
 def simu2():
     """ Simulate many spoofing scenarios."""
     errors_l = []
@@ -163,7 +208,6 @@ def simu2_spoofing(spoofed_row, spoofing_row):
     graph.show()
     return error[0]
 
-
 def sim3_randoom_spoofing(spoofed_row, seed):
     """ Simulate the random spoofing."""
     trgt_r_m = vld_r_m.fork([spoofed_row])
@@ -183,7 +227,6 @@ def sim3_randoom_spoofing(spoofed_row, seed):
     graph.plot_point(trgt_r_m.get_positions_by_row(0), args='go', label='Real position')
     graph.plot_confidence_circle(average_positions[0], confidence_value)
     graph.show()
-
 
 def simu4_all_spoofing(spoofed_row, spoofing_row, seed):
     """ Simulate the spoofing."""
@@ -259,7 +302,6 @@ def simu5():
     print("95th percentile: ", np.percentile(errors_l, 95))
     print("99th percentile: ", np.percentile(errors_l, 99))
     print("99.99th percentile: ", np.percentile(errors_l, 99.99))
-
 
 def simu6_single(spoofed_row=0, spoofing_row=123):
     """ simu6_single one calculation, run_secure knn algo to detect the attack  """
@@ -351,11 +393,17 @@ def simu6_bis(method):
         print("No error")
 
 def tmp():
-    graph.plot_radio_map(trning_r_m, title="Training data")
-    for row in trning_r_m.get_data():
-        if row['rss'][185] != 100:
-            graph.plot_point([row['LONGITUDE'], row['LATITUDE']], args='ro')
-    graph.show()
+    test_r_m = RadioMap()
+    test_r_m.load('clement_data/ValidationData_1.csv')
+    count1 = 0
+    count2 = 0
+    for i, row in enumerate(test_r_m.get_data()):
+        if (np.array(row['rss']) == np.array(vld_r_m.get_data_by_row([i])[0]['rss'])).all():
+            count1 += 1
+        if np.sum(np.array(row['rss']) != 100) < 3:
+            count2 += 1
+    print(count1)
+    print(count2)
 
 if __name__ == '__main__':
     td = time.time()
@@ -367,9 +415,12 @@ if __name__ == '__main__':
     vld_r_m = RadioMap()
     vld_r_m.load('data/ValidationData.csv')
 
-    # Simulation 1
-    # simu1()
-    simu1_bis()
+    # Simulation 10
+    # simu10()
+    # simu10_bis()
+
+    # Simulation 11
+    # simu11()
 
     # Simulation 2
     # simu2()
@@ -390,6 +441,6 @@ if __name__ == '__main__':
     # simu6_bis("distance_FA")
     # simu6_single(0, 123)
 
-    # tmp()
+    tmp()
 
     print("Executed in ", time.time() - td, " seconds")

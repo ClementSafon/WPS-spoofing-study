@@ -76,7 +76,7 @@ class RadioMap:
         """ Return the data."""
         return self.data
 
-    def get_data_by_row(self, rows) -> list[dict]:
+    def get_data_by_row(self, rows: list[int]) -> list[dict]:
         """ Return the data from a subset of the rows."""
         if max(rows) >= len(self.data):
             raise ValueError('Row index out of range.')
