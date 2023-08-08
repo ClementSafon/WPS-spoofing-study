@@ -25,10 +25,11 @@ class RadioMap:
                 if not all(field in reader.fieldnames for field in exepected_fields):
                     raise ValueError('Invalid csv file.')
                 data = {'LONGITUDE': float(row['LONGITUDE']), 'LATITUDE': float(row['LATITUDE']), 'FLOOR': int(row['FLOOR']), 'BUILDINGID': int(row['BUILDINGID']), 'SPACEID': int( # noqa: E501 pylint: disable=line-too-long
-                    row['SPACEID']), 'RELATIVEPOSITION': int(row['RELATIVEPOSITION']), 'USERID': int(row['USERID']), 'PHONEID': int(row['PHONEID']), 'TIMESTAMP': row['TIMESTAMP'], 'rss': np.array([])} # noqa: E501 pylint: disable=line-too-long
+                    row['SPACEID']), 'RELATIVEPOSITION': int(row['RELATIVEPOSITION']), 'USERID': int(row['USERID']), 'PHONEID': int(row['PHONEID']), 'TIMESTAMP': row['TIMESTAMP'], 'rss': []} # noqa: E501 pylint: disable=line-too-long
                 for field in reader.fieldnames:
                     if field.startswith('WAP'):
-                        data['rss'] = np.append(data['rss'], int(row[field]))
+                        data['rss'].append(int(row[field]))
+                data['rss'] = np.array(data['rss'])
                 self.data.append(data)
 
     def fork(self, rows: list[int]) -> 'RadioMap':
@@ -48,11 +49,20 @@ class RadioMap:
         for j in range(len(self.data[spoofed_row]['rss'])):
             spoofing_value = spoofing_radio_map.data[spoofing_row]['rss'][j]
             if spoofing_value != 100:
+                spoofing_value = np.random.normal(spoofing_radio_map.data[spoofing_row]['rss'][j], 2.26)
                 if self.data[spoofed_row]['rss'][j] != 100:
                     self.data[spoofed_row]['rss'][j] = max(
                         self.data[spoofed_row]['rss'][j], spoofing_value)
                 else:
                     self.data[spoofed_row]['rss'][j] = spoofing_value
+
+    def reemitting_spoof(self, spoofed_row: int) -> None:
+        """ Spoof the APs by reemitting the beacon full power."""
+        if spoofed_row >= len(self.data):
+            raise ValueError('Row index out of range.')
+        for j in range(len(self.data[spoofed_row]['rss'])):
+            if self.data[spoofed_row]['rss'][j] != 100:
+                self.data[spoofed_row]['rss'][j] = np.random.normal(-38, 2.26)
 
     def random_spoof(self, spoofed_row: int, seed: int) -> None:
         """ Spoof the data of a row with random data."""
@@ -66,7 +76,7 @@ class RadioMap:
         """ Return the data."""
         return self.data
 
-    def get_data_by_row(self, rows) -> list[dict]:
+    def get_data_by_row(self, rows: list[int]) -> list[dict]:
         """ Return the data from a subset of the rows."""
         if max(rows) >= len(self.data):
             raise ValueError('Row index out of range.')
@@ -105,7 +115,7 @@ class RadioMap:
             pos.append((data['LONGITUDE'], data['LATITUDE']))
         return np.array(pos)
 
-    def get_positions_by_row(self, rows) -> np.array:
+    def get_positions_by_row(self, rows: list[int]) -> np.array:
         """ Return the positions (longitude, latitude) from a subset of the rows."""
         if max(rows) >= len(self.data):
             raise ValueError('Row index out of range.')
