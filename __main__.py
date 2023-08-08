@@ -47,26 +47,33 @@ def simu10():
     """ find all the errors for all the K,LIMIT combinations."""
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    rows = np.random.randint(0, len(vld_r_m.get_data()), 50)
+    rows = np.random.randint(0, len(vld_r_m.get_data()), 300)
     k_max = 30
 
-    for limit in range(0, 30):
+    tolerance_fail = 0.1
+
+    for limit in range(10, 1, -1):
         for k in range(1, k_max):
             errors = []
-            for row in rows:
+            fail = 0
+            for i, row in enumerate(rows):
+                print(round((i / len(rows)) * 100,2), "%         ", end="\r")
                 error = simu10_find_error(k, limit, row)
                 if error != np.inf:
                     errors.append(error)
                 else:
+                    fail += 1
+                if fail / len(rows) > tolerance_fail:
                     errors = []
                     break
             if len(errors) > 0:
                 data.append([limit, k, np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), np.percentile(errors, 25), np.percentile(errors, 75), np.percentile(errors, 90), np.percentile(errors, 95), np.percentile(errors, 99), np.percentile(errors, 99.99)])
-                print("K=", k, " LIMIT=", limit, " -> ", np.mean(errors))
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(errors),2))
             else:
+                print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
+                print("...")
                 for k in range(k, k_max):
-                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])
-                    print("K=", k, " LIMIT=", limit, " -> ", "x")
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
                 break
 
     csv_file = "output.csv"
@@ -416,7 +423,7 @@ if __name__ == '__main__':
     vld_r_m.load('data/ValidationData.csv')
 
     # Simulation 10
-    # simu10()
+    simu10()
     # simu10_bis()
 
     # Simulation 11

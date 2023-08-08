@@ -22,11 +22,10 @@ def find_position(n_neighbors: int, trning_r_m: RadioMap, trgt_r_m: RadioMap, li
     diff_sq = (target_rss - training_rss)**2
     
     for diff_sq_i in range(len(diff_sq)):
-        n_unmatched_coord = np.sum((target_rss == 100) & (training_rss[diff_sq_i] != 100))
-        n_unmatched_coord += np.sum((target_rss != 100) & (training_rss[diff_sq_i] == 100))
-        if n_unmatched_coord > limit:
+        match_coord = np.sum((target_rss != 100) & (training_rss[diff_sq_i] != 100))
+        if match_coord < limit:
             diff_sq[diff_sq_i][:] = 1000000000
-        elif n_unmatched_coord != 0:
+        else:
             diff_sq[diff_sq_i][(target_rss == 100) & (training_rss[diff_sq_i] != 100
                     ) | (target_rss == 100) & (training_rss[diff_sq_i] != 100)] = 0
 
