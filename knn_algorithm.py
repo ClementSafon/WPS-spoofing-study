@@ -5,7 +5,7 @@ import numpy as np
 from radio_map import RadioMap
 import graph
 from metadata_gen import load_blacklist, load_ap_max
-
+import time
 
 def find_position(n_neighbors: int, trning_r_m: RadioMap, trgt_r_m: RadioMap, limit: int) -> tuple[int, int, int]:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
@@ -13,34 +13,71 @@ def find_position(n_neighbors: int, trning_r_m: RadioMap, trgt_r_m: RadioMap, li
 
     training_rss = trning_r_m.get_rss()
     training_pos = trning_r_m.get_positions()
+    training_floors = trning_r_m.get_floors()
+    target_rss = trgt_r_m.get_rss()
 
-    if len(trgt_r_m.get_rss()) > 1:
+    if len(target_rss) > 1:
         print("Error: target_rss should be a 1D array")
         sys.exit(1)
     
-    target_rss = trgt_r_m.get_rss()[0]
-    diff_sq = (target_rss - training_rss)**2
+    target_rss = target_rss[0]
+
+    match_coord = np.sum((target_rss != 100) & (training_rss != 100), axis=1)
+    filtered_diff_sq = np.square(target_rss - training_rss[match_coord >= limit])
+    indexes_filtered_diff_sq = np.where(match_coord >= limit)[0]
+    filtered_training_pos = training_pos[match_coord >= limit, :]
+    filtered_training_floors = training_floors[match_coord >= limit]
     
-    for diff_sq_i in range(len(diff_sq)):
-        match_coord = np.sum((target_rss != 100) & (training_rss[diff_sq_i] != 100))
-        if match_coord < limit:
-            diff_sq[diff_sq_i][:] = 1000000000
-        else:
-            diff_sq[diff_sq_i][(target_rss == 100) & (training_rss[diff_sq_i] != 100
+    for filtered_diff_sq_i, diff_sq_i in enumerate(indexes_filtered_diff_sq):
+        filtered_diff_sq[filtered_diff_sq_i][(target_rss == 100) & (training_rss[diff_sq_i] != 100
                     ) | (target_rss == 100) & (training_rss[diff_sq_i] != 100)] = 0
 
-    distances = np.sqrt(np.sum(diff_sq, axis=1))
+    distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
+
+    if len(distances) < n_neighbors:
+        return np.array([0, 0, 0])
 
     sorted_indices = np.argsort(distances)
-    average_2d_position = np.mean(training_pos[sorted_indices[:n_neighbors]], axis=0)
-    average_floor = np.mean(trning_r_m.get_floors()[sorted_indices[:n_neighbors]])
+    average_2d_position = np.mean(filtered_training_pos[sorted_indices[:n_neighbors]], axis=0)
+    average_floor = np.mean(filtered_training_floors[sorted_indices[:n_neighbors]])
 
-    if int(distances[sorted_indices[n_neighbors - 1]]) == 721110:
-        estimated_position = np.array([0, 0, 0])
-    else:
-        estimated_position = np.array([average_2d_position[0], average_2d_position[1], average_floor])
+    return np.array([average_2d_position[0], average_2d_position[1], average_floor])
 
-    return estimated_position
+def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_r_m: RadioMap, limit: int) -> tuple[int, int, int]:
+    """ Run the KNN algorithm. Return the estimated position (x, y, z). 
+    Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
+
+    training_rss = trning_r_m.get_rss()
+    training_pos = trning_r_m.get_positions()
+    training_floors = trning_r_m.get_floors()
+    target_rss = trgt_r_m.get_rss()
+
+    if len(target_rss) > 1:
+        print("Error: target_rss should be a 1D array")
+        sys.exit(1)
+    
+    target_rss = target_rss[0]
+
+    unmatch_coord = np.sum(((target_rss == 100) & (training_rss != 100)) | ((target_rss != 100) & (training_rss == 100)), axis=1)
+    filtered_diff_sq = np.square(target_rss - training_rss[unmatch_coord < limit])
+    indexes_filtered_diff_sq = np.where(unmatch_coord < limit)[0]
+    filtered_training_pos = training_pos[unmatch_coord < limit, :]
+    filtered_training_floors = training_floors[unmatch_coord < limit]
+    
+    for filtered_diff_sq_i, diff_sq_i in enumerate(indexes_filtered_diff_sq):
+        filtered_diff_sq[filtered_diff_sq_i][(target_rss == 100) & (training_rss[diff_sq_i] != 100
+                    ) | (target_rss == 100) & (training_rss[diff_sq_i] != 100)] = 0
+
+    distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
+
+    if len(distances) < n_neighbors:
+        return np.array([0, 0, 0])
+
+    sorted_indices = np.argsort(distances)
+    average_2d_position = np.mean(filtered_training_pos[sorted_indices[:n_neighbors]], axis=0)
+    average_floor = np.mean(filtered_training_floors[sorted_indices[:n_neighbors]])
+
+    return np.array([average_2d_position[0], average_2d_position[1], average_floor])
 
 
 

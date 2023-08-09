@@ -32,6 +32,7 @@ def simu10_find_error(n_neighbors, limit, row):
     """ Find the mean error for a given number of neighbors and limit on the position of a row."""
     trgt_r_m = vld_r_m.fork([row])
     predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
+    # predicted_position = knn.find_position_UC_method(n_neighbors, trning_r_m, trgt_r_m, limit)
     if (predicted_position == [0,0,0]).all():
         return np.inf
     actual_2d_position = trgt_r_m.get_positions()[0]
@@ -47,13 +48,16 @@ def simu10():
     """ find all the errors for all the K,LIMIT combinations."""
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    rows = np.random.randint(0, len(vld_r_m.get_data()), 300)
+    rows = np.random.randint(0, len(vld_r_m.get_data()), 75)
     k_max = 30
+    k_min = 1
+    limit_max = 20
+    limit_min = 1
 
     tolerance_fail = 0.1
 
-    for limit in range(10, 1, -1):
-        for k in range(1, k_max):
+    for limit in range(limit_max, limit_min - 1, -1):
+        for k in range(k_min, k_max + 1):
             errors = []
             fail = 0
             for i, row in enumerate(rows):
@@ -87,7 +91,7 @@ def simu10():
 def simu10_bis():
     """ find the coverage for a k, and limit combination."""
     k = 7
-    limit = 19
+    limit = 7
 
     rows = [i for i in range(len(vld_r_m.get_data()))]
     errors = []
@@ -100,15 +104,15 @@ def simu10_bis():
             errors.append(error)
         else:
             failed += 1
-    print()
-    print("K=", k, " LIMIT=", limit, " -> ", np.mean(errors))
-    print("Failed: ", failed, "/", len(rows), " -> ", failed / len(rows))
+    
+    print("K=", k, " LIMIT=", limit, " -> (mean error) ", np.mean(errors), " (std error) ", np.std(errors), " (max error) ", np.max(errors), " (min error) ", np.min(errors), " (median error) ", np.median(errors))
+    print("Failed: ", failed, "/", len(rows), " -> ", round(failed*100 / len(rows),2))
 
 
 def simu11():
     """ find the mean error for a validation dataset where some rows are alterated."""
     k = 7
-    limit = 19
+    limit = 7
 
     for file_index in range(1,11):
 
@@ -401,16 +405,11 @@ def simu6_bis(method):
 
 def tmp():
     test_r_m = RadioMap()
-    test_r_m.load('clement_data/ValidationData_1.csv')
-    count1 = 0
-    count2 = 0
-    for i, row in enumerate(test_r_m.get_data()):
-        if (np.array(row['rss']) == np.array(vld_r_m.get_data_by_row([i])[0]['rss'])).all():
-            count1 += 1
-        if np.sum(np.array(row['rss']) != 100) < 3:
-            count2 += 1
-    print(count1)
-    print(count2)
+    test_r_m.load('data/ValidationData.csv')
+    n = []
+    for rss in test_r_m.get_rss():
+        n.append(np.sum(rss != 100))
+    print(np.mean(n))
 
 if __name__ == '__main__':
     td = time.time()
@@ -423,8 +422,8 @@ if __name__ == '__main__':
     vld_r_m.load('data/ValidationData.csv')
 
     # Simulation 10
-    simu10()
-    # simu10_bis()
+    # simu10()
+    simu10_bis()
 
     # Simulation 11
     # simu11()
@@ -448,6 +447,6 @@ if __name__ == '__main__':
     # simu6_bis("distance_FA")
     # simu6_single(0, 123)
 
-    tmp()
+    # tmp()
 
     print("Executed in ", time.time() - td, " seconds")
