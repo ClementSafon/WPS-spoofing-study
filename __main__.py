@@ -6,6 +6,7 @@ import csv
 from radio_map import RadioMap
 import knn_algorithm as knn
 from matplotlib import pyplot as plt
+from metadata_gen import load_ap_max
 
 def simu1_display(error_positions, error_floors):
     """ Display the results of the simulation 1."""
@@ -28,11 +29,21 @@ def simu1_display(error_positions, error_floors):
     print("# Min error: ", np.min(error_floors))
     print("# Median error: ", np.median(error_floors))
 
-def simu10_find_error(n_neighbors, limit, row):
+def simu10_find_error(n_neighbors, limit, row, UC_method=False, index_to_remove: list = None):
     """ Find the mean error for a given number of neighbors and limit on the position of a row."""
     trgt_r_m = vld_r_m.fork([row])
-    predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
-    # predicted_position = knn.find_position_UC_method(n_neighbors, trning_r_m, trgt_r_m, limit)
+    if UC_method:
+        if index_to_remove is None:
+            predicted_position = knn.find_position_UC_method(n_neighbors, trning_r_m, trgt_r_m, limit)
+        else:
+            trgt_r_m.get_data()[0]['rss'] = np.delete(trgt_r_m.get_data()[0]['rss'], index_to_remove, axis=0)
+            predicted_position = knn.find_position_UC_method(n_neighbors, clean_trning_r_m, trgt_r_m, limit)
+    else:
+        if index_to_remove is None:
+            predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
+        else:
+            trgt_r_m.get_data()[0]['rss'] = np.delete(trgt_r_m.get_data()[0]['rss'], index_to_remove, axis=0)
+            predicted_position = knn.find_position(n_neighbors, clean_trning_r_m, trgt_r_m, limit)
     if (predicted_position == [0,0,0]).all():
         return np.inf
     actual_2d_position = trgt_r_m.get_positions()[0]
@@ -89,17 +100,24 @@ def simu10():
     print(f"CSV file '{csv_file}' created successfully.")
 
 def simu10_bis():
-    """ find the coverage for a k, and limit combination."""
+    """ find the coverage for a k, and limit combination."""    
+    use_clean_dataset = False
+
+    if use_clean_dataset:
+        with open('data/other/index_to_remove.csv', 'r') as csvfile:
+           index_to_remove = [int(i) for i in list(csv.reader(csvfile))[0]]
+    else:
+        index_to_remove = None
+
     k = 7
     limit = 7
-
     rows = [i for i in range(len(vld_r_m.get_data()))]
     errors = []
     failed = 0
     print('Total: ', len(rows))
     for row in rows:
         print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-        error = simu10_find_error(k, limit, row)
+        error = simu10_find_error(k, limit, row, UC_method=False, index_to_remove=index_to_remove)
         if error != np.inf:
             errors.append(error)
         else:
@@ -108,6 +126,23 @@ def simu10_bis():
     print("K=", k, " LIMIT=", limit, " -> (mean error) ", np.mean(errors), " (std error) ", np.std(errors), " (max error) ", np.max(errors), " (min error) ", np.min(errors), " (median error) ", np.median(errors))
     print("Failed: ", failed, "/", len(rows), " -> ", round(failed*100 / len(rows),2))
 
+    
+    k = 7
+    limit = 19
+    errors = []
+    failed = 0
+    print('Total: ', len(rows))
+    for row in rows:
+        print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
+        error = simu10_find_error(k, limit, row, UC_method=True, index_to_remove=index_to_remove)
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print("K=", k, " LIMIT=", limit, " -> (mean error) ", np.mean(errors), " (std error) ", np.std(errors), " (max error) ", np.max(errors), " (min error) ", np.min(errors), " (median error) ", np.median(errors))
+    print("Failed: ", failed, "/", len(rows), " -> ", round(failed*100 / len(rows),2))
+    
 
 def simu11():
     """ find the mean error for a validation dataset where some rows are alterated."""
@@ -403,23 +438,95 @@ def simu6_bis(method):
     else:
         print("No error")
 
+def display_rssi_timestamp():
+    """ temporary function to test stuff. """
+    # with open('data/ap_max_dist.txt', 'r') as f:
+    #     ap_max_dist = np.array([float(dist) for dist in f.readline().strip().split(",")])
+    # sorted_indexes = np.argsort(ap_max_dist)
+    # print(sorted_indexes[-10:])
+    # id_AP = sorted_indexes[-10] + 1
+    id_AP = 519
+    x_coords, y_coords = [], []
+    rssi = []
+    timestamp = []
+    r_m_rows = []
+    for row, fingerprint in enumerate(clean_trning_r_m.get_data()):
+        if fingerprint['rss'][id_AP - 1] != 100:
+            x_coords.append(fingerprint['LONGITUDE'])
+            y_coords.append(fingerprint['LATITUDE'])
+            rssi.append(fingerprint['rss'][id_AP + 1])
+            timestamp.append(float(fingerprint['TIMESTAMP']))
+        else:
+            r_m_rows.append(row)
+    r_m = clean_trning_r_m.fork(r_m_rows)
+
+    if len(rssi) == 0:
+        print("No data for this AP")
+        return
+
+    # Normalize values to a range between 0 and 1
+    normalized_rssi = (np.array(rssi) + 110) / 110
+    normalized_timestamp = (np.array(timestamp) - np.min(timestamp)) / (np.max(timestamp) - np.min(timestamp))
+
+    graph.plot_radio_map(r_m)
+
+    # Create a colormap
+    colormap = plt.colormaps.get_cmap('plasma')
+
+    # Create a scatter plot
+    scatter = plt.scatter(x_coords, y_coords, c=normalized_rssi, cmap=colormap, marker='o', s=60)
+
+    # Add colorbar
+    cbar = plt.colorbar(scatter)
+    cbar.set_label('RSSI')
+
+    # Set plot labels and title
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('Scatter Plot with Color Gradient')
+
+    plt.figure()
+    graph.plot_radio_map(r_m)
+    scatter = plt.scatter(x_coords, y_coords, c=normalized_timestamp, cmap=colormap, marker='o', s=60)
+
+    # Add colorbar
+    cbar = plt.colorbar(scatter)
+    cbar.set_label('Timestamp')
+
+    # Set plot labels and title
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('Scatter Plot with Color Gradient')
+
+    # Show the plot
+    plt.show()
+
 def tmp():
-    test_r_m = RadioMap()
-    test_r_m.load('data/ValidationData.csv')
-    n = []
-    for rss in test_r_m.get_rss():
-        n.append(np.sum(rss != 100))
-    print(np.mean(n))
+    ap_to_remove = []
+    thresholds = np.array([i for i in range(500, 10, -10)])
+    max_distances = np.array(load_ap_max(trning_r_m))
+    for threshold in thresholds:
+        ap_to_remove.append(len(np.where(max_distances > threshold)[0]))
+    plt.plot(thresholds, ap_to_remove)
+    plt.show()
 
-if __name__ == '__main__':
+
+
+def init():
+    """ Initialize the simulation."""
     td = time.time()
-
     confidence_value = 24.42282
-
     trning_r_m = RadioMap()
     trning_r_m.load('data/TrainingData.csv')
     vld_r_m = RadioMap()
     vld_r_m.load('data/ValidationData.csv')
+    clean_trning_r_m = RadioMap()
+    clean_trning_r_m.load('data/other/clean_TrainingData.csv')
+    return td, confidence_value, trning_r_m, vld_r_m, clean_trning_r_m
+
+
+if __name__ == '__main__':
+    td, confidence_value, trning_r_m, vld_r_m, clean_trning_r_m = init()
 
     # Simulation 10
     # simu10()
