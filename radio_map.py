@@ -25,6 +25,9 @@ class RadioMap:
 
     def get_fingerprint(self, id: int) -> Fingerprint:
         return self.fingerprints[id]
+
+    def get_fingerprints(self) -> list[Fingerprint]:
+        return self.fingerprints
     
     def add_fingerprint(self, fingerprint: Fingerprint) -> int:
         self.fingerprints.append(fingerprint)

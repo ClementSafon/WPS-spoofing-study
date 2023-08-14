@@ -30,6 +30,10 @@ class Fingerprint():
         """ Get the RSS vector."""
         return self.rss
     
+    def get_id(self) -> int:
+        """ Get the ID."""
+        return self.id
+    
     def get_position(self) -> np.ndarray:
         """ Get the position."""
         return self.position

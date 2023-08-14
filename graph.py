@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from radio_map import RadioMap
 
-def plot_radio_map(radio_map: RadioMap, new_figure=False, title=None, args='bx') -> None:
+def plot_radio_map(radio_map: RadioMap, new_figure=False, title=None, color="b", marker="x", alpha=1) -> None:
     """ Plot a radio map."""
-    positions = radio_map.get_position_matrix()
+    pos_2d = radio_map.get_position_matrix()[:, :2]
     if new_figure:
         plt.figure()
-    plt.plot(positions[:, 0], positions[:, 1], args)
+    pos_2d = np.unique(pos_2d, axis=0)
+    plt.scatter(pos_2d[:, 0], pos_2d[:, 1], color=color, marker=marker, alpha=alpha)
     if title is not None:
         plt.title(title)
 
