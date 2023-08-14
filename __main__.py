@@ -455,7 +455,7 @@ if __name__ == '__main__':
     # simu13_scenario2_SC_method()
     # simu14_scenario2_UC_method()
 
-    # display_AP_fingerprints(100)
+    # display_AP_fingerprints(150)
 
     # tmp()
 
