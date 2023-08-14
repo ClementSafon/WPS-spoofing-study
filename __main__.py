@@ -8,90 +8,51 @@ import knn_algorithm as knn
 from matplotlib import pyplot as plt
 from metadata_gen import load_ap_max
 
-def simu1_display(error_positions, error_floors):
-    """ Display the results of the simulation 1."""
-    print(" -> location:")
-    print("# Mean error: ", np.mean(error_positions))
-    print("# Standard deviation: ", np.std(error_positions))
-    print("# Max error: ", np.max(error_positions))
-    print("# Min error: ", np.min(error_positions))
-    print("# Median error: ", np.median(error_positions))
-    print("# 25th percentile: ", np.percentile(error_positions, 25))
-    print("# 75th percentile: ", np.percentile(error_positions, 75))
-    print("# 90th percentile: ", np.percentile(error_positions, 90))
-    print("# 95th percentile: ", np.percentile(error_positions, 95))
-    print("# 99th percentile: ", np.percentile(error_positions, 99))
-    print("# 99.99th percentile: ", np.percentile(error_positions, 99.99))
-    print(" -> Floor:")
-    print("# Mean error: ", np.mean(error_floors))
-    print("# Standard deviation: ", np.std(error_floors))
-    print("# Max error: ", np.max(error_floors))
-    print("# Min error: ", np.min(error_floors))
-    print("# Median error: ", np.median(error_floors))
+## Simulations
 
-def simu10_find_error(n_neighbors, limit, row, UC_method=False, index_to_remove: list = None):
-    """ Find the mean error for a given number of neighbors and limit on the position of a row."""
-    trgt_r_m = vld_r_m.fork([row])
-    if UC_method:
-        if index_to_remove is None:
-            predicted_position = knn.find_position_UC_method(n_neighbors, trning_r_m, trgt_r_m, limit)
-        else:
-            trgt_r_m.get_data()[0]['rss'] = np.delete(trgt_r_m.get_data()[0]['rss'], index_to_remove, axis=0)
-            predicted_position = knn.find_position_UC_method(n_neighbors, clean_trning_r_m, trgt_r_m, limit)
-    else:
-        if index_to_remove is None:
-            predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
-        else:
-            trgt_r_m.get_data()[0]['rss'] = np.delete(trgt_r_m.get_data()[0]['rss'], index_to_remove, axis=0)
-            predicted_position = knn.find_position(n_neighbors, clean_trning_r_m, trgt_r_m, limit)
-    if (predicted_position == [0,0,0]).all():
-        return np.inf
-    actual_2d_position = trgt_r_m.get_positions()[0]
-    actual_floor = trgt_r_m.get_floors()[0]
-    floor_height = 3.0
-    actual_position = np.array([actual_2d_position[0], actual_2d_position[1], actual_floor * floor_height])
-    predicted_position = np.array([predicted_position[0], predicted_position[1], predicted_position[2] * floor_height])
-    error_position = np.linalg.norm(
-        predicted_position - actual_position)
-    return error_position
-
-def simu10():
+# Find the best parameters : SIMU 01
+def simu01_shared_coord_method():
     """ find all the errors for all the K,LIMIT combinations."""
-    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    rows = np.random.randint(0, len(vld_r_m.get_data()), 75)
-    k_max = 30
+    # Custom Input Data
+    size_of_the_sample = 100
     k_min = 1
-    limit_max = 20
+    k_max = 15
+    limit_max = 15
     limit_min = 1
-
     tolerance_fail = 0.1
+
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
 
     for limit in range(limit_max, limit_min - 1, -1):
         for k in range(k_min, k_max + 1):
-            errors = []
-            fail = 0
-            for i, row in enumerate(rows):
-                print(round((i / len(rows)) * 100,2), "%         ", end="\r")
-                error = simu10_find_error(k, limit, row)
-                if error != np.inf:
-                    errors.append(error)
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
+                if position_error == np.inf:
+                    count_fail += 1
                 else:
-                    fail += 1
-                if fail / len(rows) > tolerance_fail:
-                    errors = []
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
                     break
-            if len(errors) > 0:
-                data.append([limit, k, np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), np.percentile(errors, 25), np.percentile(errors, 75), np.percentile(errors, 90), np.percentile(errors, 95), np.percentile(errors, 99), np.percentile(errors, 99.99)])
-                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(errors),2))
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.median(position_errors),2))
             else:
                 print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
-                print("...")
                 for k in range(k, k_max):
-                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
                 break
 
-    csv_file = "output.csv"
+    csv_file = "results/K_L_evaluation_using_SC_method_"+str(k_max)+"_"+str(limit_max)+"_"+str(tolerance_fail)+"_.csv"
 
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -99,50 +60,109 @@ def simu10():
 
     print(f"CSV file '{csv_file}' created successfully.")
 
-def simu10_bis():
-    """ find the coverage for a k, and limit combination."""    
-    use_clean_dataset = False
+def simu01_unshared_coord_method():
+    """ find all the errors for all the K,LIMIT combinations."""
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    if use_clean_dataset:
-        with open('data/other/index_to_remove.csv', 'r') as csvfile:
-           index_to_remove = [int(i) for i in list(csv.reader(csvfile))[0]]
-    else:
-        index_to_remove = None
+    # Custom Input Data
+    size_of_the_sample = 100
+    k_min = 1
+    k_max = 15
+    limit_max = 25
+    limit_min = 10
+    tolerance_fail = 0.1
 
-    k = 7
-    limit = 7
-    rows = [i for i in range(len(vld_r_m.get_data()))]
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+
+    for limit in range(limit_min, limit_max + 1):
+        for k in range(k_min, k_max + 1):
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error_UC_method(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
+                if position_error == np.inf:
+                    count_fail += 1
+                else:
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
+                    break
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.median(position_errors),2))
+            else:
+                print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
+                for k in range(k, k_max):
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                break
+
+    csv_file = "results/K_L_evaluation_using_UC_method_"+str(k_max)+"_"+str(limit_max)+"_"+str(tolerance_fail)+"_.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    print(f"CSV file '{csv_file}' created successfully.")
+
+# Test the best K and LIMIT
+def simu02_shared_coord_method():
+    """ find the error for a k, and limit combination."""    
+
+    k = 6
+    limit = 6
+
     errors = []
     failed = 0
-    print('Total: ', len(rows))
-    for row in rows:
-        print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-        error = simu10_find_error(k, limit, row, UC_method=False, index_to_remove=index_to_remove)
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
         if error != np.inf:
             errors.append(error)
         else:
             failed += 1
     
-    print("K=", k, " LIMIT=", limit, " -> (mean error) ", np.mean(errors), " (std error) ", np.std(errors), " (max error) ", np.max(errors), " (min error) ", np.min(errors), " (median error) ", np.median(errors))
-    print("Failed: ", failed, "/", len(rows), " -> ", round(failed*100 / len(rows),2))
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
 
-    
+def simu02_unshared_coord_method():
+    """ find the error for a k, and limit combination."""    
+
     k = 7
-    limit = 19
+    limit = 16
+
     errors = []
     failed = 0
-    print('Total: ', len(rows))
-    for row in rows:
-        print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-        error = simu10_find_error(k, limit, row, UC_method=True, index_to_remove=index_to_remove)
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error_UC_method(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
         if error != np.inf:
             errors.append(error)
         else:
             failed += 1
     
-    print("K=", k, " LIMIT=", limit, " -> (mean error) ", np.mean(errors), " (std error) ", np.std(errors), " (max error) ", np.max(errors), " (min error) ", np.min(errors), " (median error) ", np.median(errors))
-    print("Failed: ", failed, "/", len(rows), " -> ", round(failed*100 / len(rows),2))
-    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
 
 def simu11():
     """ find the mean error for a validation dataset where some rows are alterated."""
@@ -445,17 +465,22 @@ def display_rssi_timestamp():
     # sorted_indexes = np.argsort(ap_max_dist)
     # print(sorted_indexes[-10:])
     # id_AP = sorted_indexes[-10] + 1
-    id_AP = 519
+    id_AP = 54
     x_coords, y_coords = [], []
     rssi = []
     timestamp = []
     r_m_rows = []
     for row, fingerprint in enumerate(clean_trning_r_m.get_data()):
         if fingerprint['rss'][id_AP - 1] != 100:
-            x_coords.append(fingerprint['LONGITUDE'])
-            y_coords.append(fingerprint['LATITUDE'])
-            rssi.append(fingerprint['rss'][id_AP + 1])
-            timestamp.append(float(fingerprint['TIMESTAMP']))
+            if fingerprint['LONGITUDE'] in x_coords and fingerprint['LATITUDE'] == y_coords[x_coords.index(fingerprint['LONGITUDE'])]:
+                if fingerprint["TIMESTAMP"] > timestamp[x_coords.index(fingerprint['LONGITUDE'])]:
+                    rssi[x_coords.index(fingerprint['LONGITUDE'])] = fingerprint['rss'][id_AP - 1]
+                    timestamp[x_coords.index(fingerprint['LONGITUDE'])] = fingerprint['TIMESTAMP']
+            else:
+                x_coords.append(fingerprint['LONGITUDE'])
+                y_coords.append(fingerprint['LATITUDE'])
+                rssi.append(fingerprint['rss'][id_AP + 1])
+                timestamp.append(float(fingerprint['TIMESTAMP']))
         else:
             r_m_rows.append(row)
     r_m = clean_trning_r_m.fork(r_m_rows)
@@ -468,7 +493,7 @@ def display_rssi_timestamp():
     normalized_rssi = (np.array(rssi) + 110) / 110
     normalized_timestamp = (np.array(timestamp) - np.min(timestamp)) / (np.max(timestamp) - np.min(timestamp))
 
-    graph.plot_radio_map(r_m)
+    # graph.plot_radio_map(r_m)
 
     # Create a colormap
     colormap = plt.colormaps.get_cmap('plasma')
@@ -486,7 +511,7 @@ def display_rssi_timestamp():
     plt.title('Scatter Plot with Color Gradient')
 
     plt.figure()
-    graph.plot_radio_map(r_m)
+    # graph.plot_radio_map(r_m)
     scatter = plt.scatter(x_coords, y_coords, c=normalized_timestamp, cmap=colormap, marker='o', s=60)
 
     # Add colorbar
@@ -502,38 +527,57 @@ def display_rssi_timestamp():
     plt.show()
 
 def tmp():
-    ap_to_remove = []
-    thresholds = np.array([i for i in range(500, 10, -10)])
-    max_distances = np.array(load_ap_max(trning_r_m))
-    for threshold in thresholds:
-        ap_to_remove.append(len(np.where(max_distances > threshold)[0]))
-    plt.plot(thresholds, ap_to_remove)
+    removed_fingerprints = []
+    for tol_i, tol in enumerate(np.linspace(0, 1, 10)):
+        # show the progress
+        print(tol*100, "%", end="\r")
+        removed_fingerprints.append([])
+        for ap in range(len(trning_r_m.get_data()[0]['rss'])):
+            timestamp = np.zeros(len(trning_r_m.get_data()))
+            for row, fingerprint in enumerate(trning_r_m.get_data()):
+                if fingerprint['rss'][ap] != 100:
+                    timestamp[row] = fingerprint['TIMESTAMP']
+            remove_indexes = np.where(timestamp == 0)[0]
+            timestamp = np.delete(timestamp, remove_indexes)
+            r_i = np.argsort(timestamp)[int(len(timestamp) * tol):]
+            for i in r_i:
+                if i not in removed_fingerprints[tol_i]:
+                    removed_fingerprints[tol_i].append(i)
+        removed_fingerprints[tol_i] = len(removed_fingerprints[tol_i]) / len(trning_r_m.get_data())*100
+    plt.plot(np.linspace(0, 1, 10), np.array(removed_fingerprints))
+    plt.xlabel("Tolerance")
+    plt.ylabel("Percentage of removed fingerprints")
+    plt.title("Percentage of removed fingerprints as a function of the tolerance")
     plt.show()
 
 
 
-def init():
-    """ Initialize the simulation."""
-    td = time.time()
-    confidence_value = 24.42282
-    trning_r_m = RadioMap()
-    trning_r_m.load('data/TrainingData.csv')
-    vld_r_m = RadioMap()
-    vld_r_m.load('data/ValidationData.csv')
-    clean_trning_r_m = RadioMap()
-    clean_trning_r_m.load('data/other/clean_TrainingData.csv')
-    return td, confidence_value, trning_r_m, vld_r_m, clean_trning_r_m
-
-
 if __name__ == '__main__':
-    td, confidence_value, trning_r_m, vld_r_m, clean_trning_r_m = init()
+    td = time.time()
+
+    print("Loading data...")
+    trning_r_m = RadioMap()
+    trning_r_m.load_from_csv('data/TrainingData.csv')
+    vld_r_m = RadioMap()
+    vld_r_m.load_from_csv('data/ValidationData.csv')
+    clean_trning_r_m = RadioMap()
+    clean_trning_r_m.load_from_csv('data/other/clean_TrainingData.csv')
+    print("Done !")
+
+    # simu01_shared_coord_method()
+    # simu01_unshared_coord_method()
+
+    simu02_shared_coord_method()
+    simu02_unshared_coord_method()
 
     # Simulation 10
     # simu10()
-    simu10_bis()
+    # simu10_bis()
 
     # Simulation 11
     # simu11()
+
+    # display_rssi_timestamp()
 
     # Simulation 2
     # simu2()

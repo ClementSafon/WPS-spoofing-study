@@ -5,18 +5,14 @@ from radio_map import RadioMap
 
 def plot_radio_map(radio_map: RadioMap, new_figure=False, title=None, args='bx') -> None:
     """ Plot a radio map."""
-    positions = []
-    for data in radio_map.get_data():
-        positions.append(
-            (float(data['LONGITUDE']), float(data['LATITUDE'])))
-    positions = np.array(positions)
+    positions = radio_map.get_position_matrix()
     if new_figure:
         plt.figure()
     plt.plot(positions[:, 0], positions[:, 1], args)
     if title is not None:
         plt.title(title)
 
-def plot_point(point: tuple, args='rx', new_figure=False, title=None, label='') -> None:
+def plot_point(point: np.ndarray, args='rx', new_figure=False, title=None, label='') -> None:
     """ Plot a point."""
     if new_figure:
         plt.figure()
