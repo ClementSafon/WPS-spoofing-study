@@ -60,8 +60,17 @@ def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
 
     return average_position
 
-def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0) -> np.ndarray:
-    predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
+    match method:
+        case "SC":
+            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "UC":
+            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "OT":
+            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case _:
+            print("Invalid method")
+            return np.inf
     if (predicted_position == np.array([0,0,0])).all():
         return np.inf
     actual_position = trgt_fgpt.get_position().copy()
@@ -69,15 +78,31 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
     actual_position[2] *= floor_height
     return np.linalg.norm(predicted_position - actual_position)
 
-def find_position_error_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0) -> np.ndarray:
-    predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-    if (predicted_position == np.array([0,0,0])).all():
-        return np.inf
-    actual_position = trgt_fgpt.get_position().copy()
-    predicted_position[2] *= floor_height
-    actual_position[2] *= floor_height
-    return np.linalg.norm(predicted_position - actual_position)
+def find_position_other_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
+    """ Run the KNN algorithm. Return the estimated position (x, y, z). 
+    Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
 
+    trning_rss_matrix = trning_r_m.get_rss_matrix()
+    trning_pos_matrix = trning_r_m.get_position_matrix()
+    target_rss = trgt_fgpt.get_rss()
+
+    unmatch_coord = np.sum(((target_rss == 100) & (trning_rss_matrix != 100)) | ((target_rss != 100) & (trning_rss_matrix == 100)), axis=1)
+    filtered_diff_sq = np.square(target_rss - trning_rss_matrix[unmatch_coord < limit])
+    indexes_filtered_diff_sq = np.where(unmatch_coord < limit)[0]
+    filtered_training_pos = trning_pos_matrix[unmatch_coord < limit]
+    
+    for filtered_diff_sq_i, diff_sq_i in enumerate(indexes_filtered_diff_sq):
+        filtered_diff_sq[filtered_diff_sq_i][(target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100
+                    ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 13*unmatch_coord[diff_sq_i]
+
+    distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
+    if len(distances) < n_neighbors:
+        return np.array([0, 0, 0])
+
+    sorted_indices = np.argsort(distances)
+    average_position = np.mean(filtered_training_pos[sorted_indices[:n_neighbors]], axis=0)
+
+    return average_position
 
 
 def run_secure(n_neighbors: int, verbose=True, trning_r_m=None, trgt_r_m=None, method="neigbors") -> list[tuple[np.ndarray, float]]:

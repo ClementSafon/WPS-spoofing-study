@@ -13,6 +13,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 15,12,x,x,x,x,x,x,x,x,x,x,x,x
 15,13,x,x,x,x,x,x,x,x,x,x,x,x
 15,14,x,x,x,x,x,x,x,x,x,x,x,x
+15,15,x,x,x,x,x,x,x,x,x,x,x,x
 14,1,x,x,x,x,x,x,x,x,x,x,x,x
 14,2,x,x,x,x,x,x,x,x,x,x,x,x
 14,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -27,6 +28,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 14,12,x,x,x,x,x,x,x,x,x,x,x,x
 14,13,x,x,x,x,x,x,x,x,x,x,x,x
 14,14,x,x,x,x,x,x,x,x,x,x,x,x
+14,15,x,x,x,x,x,x,x,x,x,x,x,x
 13,1,x,x,x,x,x,x,x,x,x,x,x,x
 13,2,x,x,x,x,x,x,x,x,x,x,x,x
 13,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -41,6 +43,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 13,12,x,x,x,x,x,x,x,x,x,x,x,x
 13,13,x,x,x,x,x,x,x,x,x,x,x,x
 13,14,x,x,x,x,x,x,x,x,x,x,x,x
+13,15,x,x,x,x,x,x,x,x,x,x,x,x
 12,1,x,x,x,x,x,x,x,x,x,x,x,x
 12,2,x,x,x,x,x,x,x,x,x,x,x,x
 12,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -55,6 +58,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 12,12,x,x,x,x,x,x,x,x,x,x,x,x
 12,13,x,x,x,x,x,x,x,x,x,x,x,x
 12,14,x,x,x,x,x,x,x,x,x,x,x,x
+12,15,x,x,x,x,x,x,x,x,x,x,x,x
 11,1,x,x,x,x,x,x,x,x,x,x,x,x
 11,2,x,x,x,x,x,x,x,x,x,x,x,x
 11,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -69,6 +73,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 11,12,x,x,x,x,x,x,x,x,x,x,x,x
 11,13,x,x,x,x,x,x,x,x,x,x,x,x
 11,14,x,x,x,x,x,x,x,x,x,x,x,x
+11,15,x,x,x,x,x,x,x,x,x,x,x,x
 10,1,x,x,x,x,x,x,x,x,x,x,x,x
 10,2,x,x,x,x,x,x,x,x,x,x,x,x
 10,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -83,6 +88,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 10,12,x,x,x,x,x,x,x,x,x,x,x,x
 10,13,x,x,x,x,x,x,x,x,x,x,x,x
 10,14,x,x,x,x,x,x,x,x,x,x,x,x
+10,15,x,x,x,x,x,x,x,x,x,x,x,x
 9,1,x,x,x,x,x,x,x,x,x,x,x,x
 9,2,x,x,x,x,x,x,x,x,x,x,x,x
 9,3,x,x,x,x,x,x,x,x,x,x,x,x
@@ -97,6 +103,7 @@ LIMIT,K,MEAN_ERROR,STD_ERROR,FAILRATE,MAX_ERROR,MIN_ERROR,MEDIAN_ERROR,25th_PERC
 9,12,x,x,x,x,x,x,x,x,x,x,x,x
 9,13,x,x,x,x,x,x,x,x,x,x,x,x
 9,14,x,x,x,x,x,x,x,x,x,x,x,x
+9,15,x,x,x,x,x,x,x,x,x,x,x,x
 8,1,15.2127517548912,16.881942985770092,0.079,84.89235020106021,0.0,9.479272673222756,3.658038122043097,21.190363669681503,36.14015320395629,57.142736460340444,72.39763616957987,84.56206833660774
 8,2,14.371991732633882,16.110664417140164,0.079,81.30232993527633,0.0,8.44647477239189,4.0746635904648905,18.20785996243087,35.69956291960864,56.554709693612786,71.95627766547206,81.30232993527633
 8,3,14.165718757154167,15.30241215431286,0.081,82.65555100065353,0.0,8.680013642469179,4.248355375542903,17.459467451821524,33.62559351321287,48.15675363755844,69.46666293962731,82.5313253068517
