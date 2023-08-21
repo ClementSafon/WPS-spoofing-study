@@ -60,24 +60,6 @@ def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
 
     return average_position
 
-def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
-    match method:
-        case "SC":
-            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case "UC":
-            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case "OT":
-            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case _:
-            print("Invalid method")
-            return np.inf
-    if (predicted_position == np.array([0,0,0])).all():
-        return np.inf
-    actual_position = trgt_fgpt.get_position().copy()
-    predicted_position[2] *= floor_height
-    actual_position[2] *= floor_height
-    return np.linalg.norm(predicted_position - actual_position)
-
 def find_position_other_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
@@ -104,105 +86,69 @@ def find_position_other_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt
 
     return average_position
 
+def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
+    match method:
+        case "SC":
+            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "UC":
+            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "OT":
+            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case _:
+            print("Invalid method")
+            return np.inf
+    if (predicted_position == np.array([0,0,0])).all():
+        return np.inf
+    actual_position = trgt_fgpt.get_position().copy()
+    predicted_position[2] *= floor_height
+    actual_position[2] *= floor_height
+    return np.linalg.norm(predicted_position - actual_position)  
 
-def run_secure(n_neighbors: int, verbose=True, trning_r_m=None, trgt_r_m=None, method="neigbors") -> list[tuple[np.ndarray, float]]:
+def find_position_error_article(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, method="SC") -> np.ndarray:
+    match method:
+        case "SC":
+            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "UC":
+            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "OT":
+            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case _:
+            print("Invalid method")
+            return np.inf
+    if (predicted_position == np.array([0,0,0])).all():
+        return np.inf
+    actual_position = trgt_fgpt.get_position().copy()
+    if int(actual_position[2]) != int(predicted_position[2]):
+        return np.inf
+    return np.linalg.norm(predicted_position[:2] - actual_position[:2])
+
+# Security
+
+def find_position_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
     """ Run the KNN secure algorithm."""
 
-    if method == "neigbors":
-        aps_blacklist = load_blacklist(trning_r_m)    
+    trning_pos_matrix = trning_r_m.get_position_matrix()
+    target_rss = trgt_fgpt.get_rss()
 
-        def check_attack() -> bool:
-            for rss_index, rss in enumerate(target_rss):
-                if rss != 100:
-                    black_list = aps_blacklist[rss_index]
-                    for rss_index_comp, rss_comp in enumerate(target_rss):
-                        if rss_index_comp in black_list and rss_comp != 100:
-                            return False
-            return True
-    elif method == "distance":
-        aps_max = load_ap_max(trning_r_m)
+    valid_fingerprint = True
 
-        def check_attack() -> bool:
-            for rss_index, rss in enumerate(target_rss):
-                if rss != 100:
-                    for rss_index_comp, rss_comp in enumerate(target_rss):
-                        if rss_comp != 100 and np.linalg.norm(trning_r_m.get_positions()[rss_index] - trning_r_m.get_positions()[rss_index_comp]) > aps_max[rss_index]:
-                            print(rss_index, rss_index_comp)
-                            return False
-            return True
-    elif method == "distance_OMAX":
-        # aps_max = load_ap_max(trning_r_m)
-        # oa_max = max(aps_max)
-        oa_max = 404.0
+    aps_max = load_ap_max(trning_r_m)
+    for rssi_index, rssi in enumerate(target_rss):
+        if rssi != 100:
+            for rssi_index_comp, rssi_comp in enumerate(target_rss):
+                if rssi_comp != 100:
+                    max_dist = max(aps_max[rssi_index][0]/2 + aps_max[rssi_index_comp][0]/2, 60)
+                    center_point = aps_max[rssi_index][1]
+                    center_point_comp = aps_max[rssi_index_comp][1]
+                    if (center_point != np.array([0,0,0])).all() and (center_point_comp != np.array([0,0,0])).all():
+                        if np.linalg.norm(center_point - center_point_comp) > max_dist:
+                            valid_fingerprint = False
+                            break
 
-        def check_attack() -> bool:
-            max_distance_threshold = 404.0
-            target_positions = trning_r_m.get_positions()
-            target_rss_np = np.array(target_rss)
-
-            for rss_index, rss in enumerate(target_rss_np):
-                if rss != 100:
-                    valid_rss_index = np.where(target_rss_np != 100)[0]
-                    distances = np.linalg.norm(target_positions[rss_index] - target_positions[valid_rss_index], axis=1)
-                    if np.any(distances > max_distance_threshold):
-                        return False
-            return True
-    elif method == "distance_FA":
-        aps_max = load_ap_max(trning_r_m)
-
-        def check_attack() -> bool:
-            for rss_index, rss in enumerate(target_rss):
-                if rss != 100:
-                    for rss_index_comp, rss_comp in enumerate(target_rss):
-                        if rss_comp != 100 and np.linalg.norm(trning_r_m.get_positions()[rss_index] - trning_r_m.get_positions()[rss_index_comp]) > aps_max[rss_index] + 200:
-                            return False
-            return True
-
-
-    distances = []
-    training_rss = trning_r_m.get_rss()
-    training_pos = trning_r_m.get_positions()
-    average_positions, error_positions = [], []
-    average_floors, error_floors = [], []
-
-    for i_target_rss in range(len(trgt_r_m.get_rss())):
-        target_rss = trgt_r_m.get_rss()[i_target_rss]
-        if verbose:
-            print('Computing distances...')
-        diff_sq = (target_rss - training_rss)**2
-        for training_rss_i, rss in enumerate(training_rss):
-            if np.sum((target_rss != 100) & (rss != 100)) == 0:
-                diff_sq[training_rss_i] = 1000000000
-
-        distances = np.sqrt(np.sum(diff_sq, axis=1))
-
-        if not check_attack():
-            average_position = [-1, -1]
-            average_floor = -1
-            error_position = -1
-            error_floor = -1
-        else:
-            sorted_indices = np.argsort(distances)
-            average_position = np.mean(
-                training_pos[sorted_indices[:n_neighbors]], axis=0)
-            average_floor = np.mean(trning_r_m.get_floors()[
-                                    sorted_indices[:n_neighbors]])
-            error_position = np.linalg.norm(
-                average_position - trgt_r_m.get_positions()[i_target_rss])
-            error_floor = abs(
-                average_floor - trgt_r_m.get_floors()[i_target_rss])
-
-        if verbose:
-            print("Predicted position: ", average_position)
-            print("Actual position: ", trgt_r_m.get_positions()[i_target_rss])
-            print("Distance: ", error_position)
-
-        average_positions.append(average_position)
-        average_floors.append(average_floor)
-        error_positions.append(error_position)
-        error_floors.append(error_floor)
-
-    return (average_positions, error_positions, average_floors, error_floors)
+    if valid_fingerprint:
+        return find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+    else:
+        return np.array([0,0,0])
 
 
 ## Section used to run by itself

@@ -76,8 +76,64 @@ def analyse_K_L_eval(file: str):
     ax.set_title('Mean values of K and L for different K and L values')
 
 
-    plt.show()
+    # plt.show()
 
+
+def plot_attack_success_results(file: str):
+    with open(file, "r") as f:
+        reader = csv.reader(f)
+        data = np.array(list(reader))
+    
+    number_of_fake_aps = [i for i in range(1, 11)]
+    success_rates = []
+    mean_errors = []
+    for line in data[1:]:
+        success_rates.append(float(line[1])*100/(float(line[2])+float(line[1])+float(line[3])))
+        mean_errors.append(float(line[5]))
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(number_of_fake_aps, success_rates, label="Success Rate", color="blue")
+    ax2 = ax1.twinx()
+    ax2.plot(number_of_fake_aps, mean_errors, label="Mean Error", color="red")
+    title = " ".join([file.split("_")[0].split("/")[1]] + file.split("_")[5:8])
+    plt.title(title)
+    ax1.set_xlabel("Number of fake APs")
+    ax1.set_ylabel("Success Rate")
+    ax2.set_ylabel("Mean Error")
+    ax1.legend(loc=2)
+    ax2.legend(loc=1)
+
+def plot_attack_failures_results(files: list[str]):
+    plt.figure()
+    for file in files:
+        with open(file, "r") as f:
+            reader = csv.reader(f)
+            data = np.array(list(reader))
+        
+        number_of_fake_aps = [i for i in range(1, 11)]
+        fails_rate_due_to_attacks = []
+        for line in data[1:]:
+            fails_rate_due_to_attacks.append(float(line[3])/(float(line[2])+float(line[1])))
+        label = " ".join(file.split("_")[5:8])
+        plt.plot(number_of_fake_aps, fails_rate_due_to_attacks, label=label, linestyle='dashed')
+    plt.title("Attack Failures")
+    plt.xlabel("Number of fake APs")
+    plt.ylabel("Success Rate")
+    plt.legend()
+    
+def analyse_attack_scenarios():
+    files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method_K11_L7_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method_K11_L7_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario1_using_OT_method_K7_L16_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_OT_method_K7_L16_.csv"]
+    plot_attack_success_results(files[0])
+    plot_attack_success_results(files[1])
+
+    plot_attack_success_results(files[2])
+    plot_attack_success_results(files[3])
+
+    plot_attack_failures_results(files)
 
 
 
@@ -87,7 +143,12 @@ def analyse_K_L_eval(file: str):
 
 if __name__ == '__main__':
 
-
-
-    analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
     # analyse_K_L_eval("results/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
+
+    analyse_attack_scenarios()
+
+    plot_attack_success_results("results/secure_knn_on_corrupted_dataset_scenario2_using_OT_method_K7_L16_.csv")
+    
+
+    plt.show()
