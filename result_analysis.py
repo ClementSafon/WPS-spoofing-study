@@ -22,8 +22,8 @@ def analyse_K_L_eval(file: str):
     k_values = []
     l_values = []
     for l,k in data[1:, :2]:
-        if int(l) not in l_values:
-            l_values.append(int(l))
+        if float(l) not in l_values:
+            l_values.append(float(l))
         if int(k) not in k_values:
             k_values.append(int(k))
 
@@ -32,7 +32,7 @@ def analyse_K_L_eval(file: str):
     for l,k,mean in data[1:, :3]:
         if mean == "x":
             mean = np.nan
-        mean_values[l_values.index(int(l)), k_values.index(int(k))] = float(mean)
+        mean_values[l_values.index(float(l)), k_values.index(int(k))] = float(mean)
 
     k_values = np.array(k_values)
     l_values = np.array(l_values)
@@ -145,10 +145,11 @@ if __name__ == '__main__':
 
     # analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
     # analyse_K_L_eval("results/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
+    analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.1_0.1_.csv")
 
-    analyse_attack_scenarios()
+    # analyse_attack_scenarios()
 
-    plot_attack_success_results("results/secure_knn_on_corrupted_dataset_scenario2_using_OT_method_K7_L16_.csv")
+    # plot_attack_success_results("results/secure_knn_on_corrupted_dataset_scenario2_using_OT_method_K7_L16_.csv")
     
 
     plt.show()

@@ -475,6 +475,86 @@ def simu13_scenario2_OT_method():
 
     print(f"CSV file '{csv_file}' created successfully.")
 
+# Aternative method
+
+def simu02_variable_threshold_method():
+    """ find all the errors for all the K,LIMIT combinations."""
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
+
+    # Custom Input Data
+    size_of_the_sample = 100
+    k_min = 1
+    k_max = 15
+    limit_max = 0.8
+    limit_min = 0
+    limit_pas = 0.1
+    tolerance_fail = 0.1
+
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+
+    for limit in np.linspace(limit_min, limit_max, int((limit_max - limit_min) / limit_pas) + 1):
+        for k in range(k_min, k_max + 1):
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="VT")
+                if position_error == np.inf:
+                    count_fail += 1
+                else:
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
+                    break
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.median(position_errors),2))
+            else:
+                print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
+                for k in range(k, k_max + 1):
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                break
+
+    csv_file = "results/K_L_evaluation_using_VT_method_"+str(k_max)+"_"+str(limit_pas)+"_"+str(tolerance_fail)+"_.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    print(f"CSV file '{csv_file}' created successfully.")
+
+def simu04_variable_threshold_method():
+    """ find the error for a k, and limit combination."""    
+
+    k = 7
+    limit = 0.5
+
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="VT")
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+
+
 # Security
 
 def simu21_scenario2_OT_method_secu():
@@ -537,7 +617,7 @@ def simu22_scenario2_OT_secu_single(number_of_fake_ap: int):
     n_positioning_failed_due_to_attack = 0
     n_positioning_no_failed_due_to_attack = 0
     positioning_error_due_to_attack = []
-    print('ValidationData_' + str(file_index) + '.csv')
+    print('ValidationData_' + str(number_of_fake_ap) + '.csv')
     for fgpt_id in range(len(vld_X_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
         predicted_position = knn.find_position_secure(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit)
@@ -688,9 +768,12 @@ if __name__ == '__main__':
     # simu13_scenario1_OT_method()
     # simu13_scenario2_OT_method()
 
+    simu02_variable_threshold_method()
+    # simu04_variable_threshold_method()
+
     # simu21_scenario2_OT_method_secu()
 
-    display_AP_fingerprints(243)
+    # display_AP_fingerprints(243)
 
     # tmp()
     # tmp2()
