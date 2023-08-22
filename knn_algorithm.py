@@ -8,7 +8,7 @@ from metadata_gen import load_blacklist, load_ap_max
 from fingerprint import Fingerprint
 import time
 
-def find_position(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
+def find_position_SC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Return (0,0,0) if the limit can't be found."""
 
@@ -35,32 +35,6 @@ def find_position(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint
     return average_position
 
 def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
-    """ Run the KNN algorithm. Return the estimated position (x, y, z). 
-    Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
-
-    trning_rss_matrix = trning_r_m.get_rss_matrix()
-    trning_pos_matrix = trning_r_m.get_position_matrix()
-    target_rss = trgt_fgpt.get_rss()
-
-    unmatch_coord = np.sum(((target_rss == 100) & (trning_rss_matrix != 100)) | ((target_rss != 100) & (trning_rss_matrix == 100)), axis=1)
-    filtered_diff_sq = np.square(target_rss - trning_rss_matrix[unmatch_coord < limit])
-    indexes_filtered_diff_sq = np.where(unmatch_coord < limit)[0]
-    filtered_training_pos = trning_pos_matrix[unmatch_coord < limit]
-    
-    for filtered_diff_sq_i, diff_sq_i in enumerate(indexes_filtered_diff_sq):
-        filtered_diff_sq[filtered_diff_sq_i][(target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100
-                    ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 0
-
-    distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
-    if len(distances) < n_neighbors:
-        return np.array([0, 0, 0])
-
-    sorted_indices = np.argsort(distances)
-    average_position = np.mean(filtered_training_pos[sorted_indices[:n_neighbors]], axis=0)
-
-    return average_position
-
-def find_position_other_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
 
@@ -117,11 +91,9 @@ def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
 def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
     match method:
         case "SC":
-            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            predicted_position = find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case "UC":
             predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case "OT":
-            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case "VT":
             predicted_position = find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case _:
@@ -137,11 +109,9 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
 def find_position_error_article(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, method="SC") -> np.ndarray:
     match method:
         case "SC":
-            predicted_position = find_position(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            predicted_position = find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case "UC":
             predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case "OT":
-            predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case _:
             print("Invalid method")
             return np.inf
@@ -176,7 +146,7 @@ def find_position_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fing
                             break
 
     if valid_fingerprint:
-        return find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        return find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
     else:
         return np.array([0,0,0])
 
@@ -187,7 +157,7 @@ def run(trning_r_m: RadioMap, test_fgpt: Fingerprint, n_neighbors: int, gui=True
     """ Run the KNN algorithm."""
     if verbose:
         print("Running KNN algorithm...")
-    predicted_position = find_position(n_neighbors, trning_r_m, test_fgpt, limit)
+    predicted_position = find_position_SC_method(n_neighbors, trning_r_m, test_fgpt, limit)
     actual_position = test_fgpt.get_position().copy()
     floor_height = 3.0
     predicted_position[2] *= floor_height

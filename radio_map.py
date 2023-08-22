@@ -44,6 +44,9 @@ class RadioMap:
     
     def get_position_matrix(self) -> np.ndarray:
         return np.array([fgpt.position for fgpt in self.fingerprints])
+    
+    def get_position(self, id: int) -> np.ndarray:
+        return self.fingerprints[id].position
 
     def load_from_csv(self, csv_file: str) -> None:
         if not os.path.isfile(csv_file):
