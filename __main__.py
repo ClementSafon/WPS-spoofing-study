@@ -272,18 +272,19 @@ def simu1X_scenarioX_XX_method(k: int, limit: float, scenario: str, method: str,
             null_pred_pos = (predicted_position == [0,0,0]).all()
             null_norm_pos = (normal_predicted_position == [0,0,0]).all()
 
-            if (predicted_position != normal_predicted_position).all():
-                n_attack_successfull += 1
-                if not null_norm_pos and not null_pred_pos:
-                    distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
-                    distance_error_actual_position.append(np.linalg.norm(predicted_position - vld_X_r_m.get_position(fgpt_id)))
-            else:
-                n_attack_failed += 1
             if null_norm_pos:
                 normal_positioning_failed += 1
             if null_pred_pos:
                 positioning_failed += 1
-            total_of_attack = len(vld_X_r_m)
+                n_attack_failed += 1
+            else:
+                if (predicted_position != normal_predicted_position).all():
+                    n_attack_successfull += 1
+                    if not null_norm_pos and not null_pred_pos:
+                        distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
+                        distance_error_actual_position.append(np.linalg.norm(predicted_position - vld_X_r_m.get_position(fgpt_id)))
+                else:
+                    n_attack_failed += 1
                     
         data.append(["ValidationData_" + str(file_index) + '.csv', n_attack_successfull, n_attack_failed, positioning_failed, normal_positioning_failed, np.mean(distance_error_normal_rss), np.mean(distance_error_actual_position), total_of_attack])
             
