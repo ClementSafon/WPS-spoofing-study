@@ -114,6 +114,8 @@ def plot_attack_success_results(file: str):
     ax2.legend(loc=1)
 
 def plot_attack_failures_results(files: list[str]):
+    if files == []:
+        return
     plt.figure()
     for file in files:
         with open(file, "r") as f:
@@ -123,7 +125,7 @@ def plot_attack_failures_results(files: list[str]):
         number_of_fake_aps = [i for i in range(1, 11)]
         fails_rate_due_to_attacks = []
         for line in data[1:]:
-            fails_rate_due_to_attacks.append(float(line[3])+float(line[4]))
+            fails_rate_due_to_attacks.append(float(line[3]))
         label = " ".join(file.split("_")[5:8])
         plt.plot(number_of_fake_aps, fails_rate_due_to_attacks, label=label, linestyle='dashed')
     plt.title("Attack Failures")
@@ -132,6 +134,8 @@ def plot_attack_failures_results(files: list[str]):
     plt.legend()
 
 def plot_scenario(files: list[str], parameter="success"):
+    if files == []:
+        return
     plt.figure()
     success_rates = []
     mean_errors_normal = []
@@ -169,6 +173,8 @@ def plot_scenario(files: list[str], parameter="success"):
     plt.legend()
 
 def plot_method(files: list[str], parameter="success"):
+    if files == []:
+        return
     plt.figure()
     success_rates = []
     mean_errors_normal = []
@@ -207,17 +213,11 @@ def plot_method(files: list[str], parameter="success"):
     
 
     
-def analyse_attack_scenarios(comparison: str):
-    files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method_K11_L7_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method_K11_L7_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_VT_method_K4_L0.6_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_VT_method_K4_L0.6_.csv",]
+def analyse_attack_scenarios(comparison: str, files: list[str]):
     
     if comparison == "method":
-        files_scenario1 = [files[0], files[2], files[4]]
-        files_scenario2 = [files[1], files[3], files[5]]
+        files_scenario1 = [file for file in files if "scenario1" in file]
+        files_scenario2 = [file for file in files if "scenario2" in file]
         plot_scenario(files_scenario1, parameter="success") 
         plot_scenario(files_scenario2, parameter="success")
         plot_scenario(files_scenario1, parameter="error_normal")
@@ -228,9 +228,9 @@ def analyse_attack_scenarios(comparison: str):
         plot_attack_failures_results(files_scenario2)
 
     elif comparison == "scenario":
-        files_method_SC = [files[0], files[1]]
-        files_method_UC = [files[2], files[3]]
-        files_method_VT = [files[4], files[5]]
+        files_method_SC = [file for file in files if "SC" in file]
+        files_method_UC = [file for file in files if "UC" in file]
+        files_method_VT = [file for file in files if "VT" in file]
         plot_method(files_method_SC, parameter="success")
         plot_method(files_method_UC, parameter="success")
         plot_method(files_method_VT, parameter="success")
@@ -252,11 +252,24 @@ if __name__ == '__main__':
 
     # analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
     # analyse_K_L_eval("results/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
-    # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.1_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.05_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
 
-    analyse_attack_scenarios("method")
 
-    # plot_attack_success_results("results/secure_knn_on_corrupted_dataset_scenario2_using_OT_method_K7_L16_.csv")
+    basic_files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method_K11_L7_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method_K11_L7_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario1_using_VT_method_K4_L0.6_.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_VT_method_K4_L0.6_.csv",]
     
+    secure_files = ["results/secure_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
+                    "results/secure_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv"]
+
+    # analyse_attack_scenarios("method", basic_files)
+    # analyse_attack_scenarios("scenario", basic_files)
+
+    # analyse_attack_scenarios("method", secure_files)   
+    analyse_attack_scenarios("scenario", secure_files) 
 
     plt.show()

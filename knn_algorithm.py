@@ -69,6 +69,7 @@ def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
     trning_pos_matrix = trning_r_m.get_position_matrix()
     target_rss = trgt_fgpt.get_rss()
 
+    unmatch_coord = np.sum(((target_rss == 100) & (trning_rss_matrix != 100)) | ((target_rss != 100) & (trning_rss_matrix == 100)), axis=1)
     match_coord = np.sum((target_rss != 100) & (trning_rss_matrix != 100) & (target_rss >= -85) & (trning_rss_matrix >= -85), axis=1)
     limit = limit_rate*np.sum((target_rss != 100) & (target_rss >= -85))
     filtered_diff_sq = np.square(target_rss - trning_rss_matrix[match_coord >= limit])
@@ -77,7 +78,7 @@ def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
     
     for filtered_diff_sq_i, diff_sq_i in enumerate(indexes_filtered_diff_sq):
         filtered_diff_sq[filtered_diff_sq_i][(target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100
-                    ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 0
+                    ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 13*unmatch_coord[diff_sq_i]
 
     distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
     if len(distances) < n_neighbors:
@@ -96,6 +97,8 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
             predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case "VT":
             predicted_position = find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        case "SECU":
+            predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit)
         case _:
             print("Invalid method")
             return np.inf
