@@ -8,6 +8,8 @@ from metadata_gen import load_blacklist, load_ap_max
 from fingerprint import Fingerprint
 import time
 
+duration = 0
+
 def find_position_SC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Return (0,0,0) if the limit can't be found."""
@@ -90,15 +92,28 @@ def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
     return average_position
 
 def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
+    global duration
     match method:
         case "SC":
+            start = time.time()
             predicted_position = find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            end = time.time()
+            duration = end - start
         case "UC":
+            start = time.time()
             predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            end = time.time()
+            duration = end - start
         case "VT":
+            start = time.time()
             predicted_position = find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            end = time.time()
+            duration = end - start
         case "SECU":
+            start = time.time()
             predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            end = time.time()
+            duration = end - start
         case _:
             print("Invalid method")
             return np.inf

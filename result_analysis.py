@@ -78,40 +78,53 @@ def analyse_K_L_eval(file: str):
 
     # plt.show()
 
-
-def plot_attack_success_results(file: str):
+def algorythme_comparison():
+    file = "results/K_L_overall_performance_evaluations.csv"
     with open(file, "r") as f:
         reader = csv.reader(f)
         data = np.array(list(reader))
-    
-    number_of_fake_aps = [i for i in range(1, 11)]
-    success_rates = []
-    mean_errors_normal = []
-    mean_errors_actual = []
-    for line in data[1:]:
-        n_attack_successfull = float(line[1])
-        n_attack_failed = float(line[2])
-        positioning_failed = float(line[3])
-        normal_positioning_failed = float(line[4])
-        distance_error_normal_rss = float(line[5])
-        distance_error_actual_position = float(line[6])
-        total_of_attack = float(line[7])
-        success_rates.append(n_attack_successfull*100/(total_of_attack))
-        mean_errors_normal.append(distance_error_normal_rss)
-        mean_errors_actual.append(distance_error_actual_position)
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.plot(number_of_fake_aps, success_rates, label="Success Rate", color="blue")
-    ax2 = ax1.twinx()
-    ax2.plot(number_of_fake_aps, mean_errors, label="Mean Error", color="red")
-    title = " ".join([file.split("_")[0].split("/")[1]] + file.split("_")[5:8])
-    plt.title(title)
-    ax1.set_xlabel("Number of fake APs")
-    ax1.set_ylabel("Success Rate")
-    ax2.set_ylabel("Mean Error")
-    ax1.legend(loc=2)
-    ax2.legend(loc=1)
+    method_names = data[1:, 0]
+    characteristics = ['Mean', 'Standard Deviation', 'Median', 'Fail Rate', 'Duration']
+    values = data[1:, [2, 3, 6, 7, 8]].astype(float).round(2)
+
+    x = np.arange(len(characteristics))  # X coordinates for the bars
+
+    # Create subplots with bars for each method's characteristics
+    fig, ax = plt.subplots()
+
+    num_methods = len(method_names)
+    bar_width = 0.15
+    spacing = 0.05
+    offsets = np.linspace(-bar_width*1.5, bar_width*1.5, num_methods)
+
+    bars_list = []  # To store the bars for each method
+
+    for i, method_name in enumerate(method_names):
+        bars = ax.bar(x + offsets[i], values[i], bar_width, label=method_name)
+        bars_list.append(bars)
+    
+    ax.set_xlabel('Characteristics')
+    ax.set_ylabel('Values')
+    ax.set_title('Method Comparison')
+    ax.set_xticks(x)
+    ax.set_xticklabels(characteristics)
+    ax.legend()
+
+    # Manually add labels for each bar
+    for bars in bars_list:
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate('{}'.format(height),
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom')
+
+    fig.tight_layout()
+        
+
+
 
 def plot_attack_failures_results(files: list[str]):
     if files == []:
@@ -277,6 +290,8 @@ if __name__ == '__main__':
     # analyse_attack_scenarios("method", secure_files)   
     # analyse_attack_scenarios("scenario", secure_files)
 
-    analyse_attack_scenarios("method", all_files)
+    # analyse_attack_scenarios("method", all_files)
+
+    algorythme_comparison()
 
     plt.show()

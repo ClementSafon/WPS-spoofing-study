@@ -172,9 +172,11 @@ def simu02_shared_coord_method():
 
     errors = []
     failed = 0
+    sum_durations = 0
     for fgpt_id in range(len(vld_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="SC")
+        sum_durations += knn.duration
         if error != np.inf:
             errors.append(error)
         else:
@@ -190,6 +192,7 @@ def simu02_shared_coord_method():
     (median error) {np.median(errors)}
     """)
     print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
 
 def simu02_unshared_coord_method():
     """ find the error for a k, and limit combination."""    
@@ -199,6 +202,7 @@ def simu02_unshared_coord_method():
 
     errors = []
     failed = 0
+    sum_durations = 0
     for fgpt_id in range(len(vld_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="UC")
@@ -217,6 +221,7 @@ def simu02_unshared_coord_method():
     (median error) {np.median(errors)}
     """)
     print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
 
 def simu02_variable_threshold_method():
     """ find the error for a k, and limit combination."""    
@@ -226,6 +231,7 @@ def simu02_variable_threshold_method():
 
     errors = []
     failed = 0
+    sum_durations = 0
     for fgpt_id in range(len(vld_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="VT")
@@ -244,7 +250,39 @@ def simu02_variable_threshold_method():
     (median error) {np.median(errors)}
     """)
     print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
 
+def simu02_overall():
+    """ find the performance for each methods. """
+
+    methods = ["SC", "UC", "VT", "SECU"]
+    k_l_values = [(11,7), (7,16), (11,0.64), (7,16)]
+
+    data = [["method", "(k,l)", "mean_error", "std_error", "max_error", "min_error", "median_error", "failed", "time_to_compute_one_position"]]
+
+    for method, k_l_value in zip(methods, k_l_values):
+        errors = []
+        failed = 0
+        sum_durations = 0
+        print("Method: ", method)
+        for fgpt_id in range(len(vld_r_m)):
+            print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+            error = knn.find_position_error(k_l_value[0], trning_r_m, vld_r_m.get_fingerprint(fgpt_id), k_l_value[1], method=method)
+            sum_durations += knn.duration
+            if error != np.inf:
+                errors.append(error)
+            else:
+                failed += 1
+        
+        data.append([method, k_l_value, np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), round(failed*100/len(vld_r_m),2), round((sum_durations/len(vld_r_m))*1000,2)])
+
+    csv_file = "results/K_L_overall_performance_evaluations.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    
+    print(f"CSV file '{csv_file}' created successfully.")
 
 ############################################################################################################
 
@@ -560,7 +598,7 @@ if __name__ == '__main__':
     # simu02_shared_coord_method()
     # simu02_unshared_coord_method()
     # simu02_variable_threshold_method()
-    # simu02_inversed_variable_threshold_method()
+    simu02_overall()
 
     ##############################
 
