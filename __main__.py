@@ -262,7 +262,7 @@ def simu1X_scenarioX_XX_method(k: int, limit: float, scenario: str, method: str,
         normal_positioning_failed = 0
         distance_error_normal_rss = []
         distance_error_actual_position = []
-        total_of_attack = 0
+        total_of_attack = len(vld_X_r_m)
         print('ValidationData_' + str(file_index) + '.csv')
         for fgpt_id in range(len(vld_X_r_m)):
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
@@ -578,7 +578,7 @@ if __name__ == '__main__':
     
     # Security tests
     # simu21_scenario1_UC_method_secu()
-    simu21_scenario2_UC_method_secu()
+    # simu21_scenario2_UC_method_secu()
 
     # simu22_UC_method_secu()
 

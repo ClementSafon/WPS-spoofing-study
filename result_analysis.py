@@ -148,7 +148,7 @@ def plot_scenario(files: list[str], parameter="success"):
             reader = csv.reader(f)
             data = np.array(list(reader))
         for line in data[1:]:
-            success_rates_file.append(float(line[1])*100/float(line[7]))
+            success_rates_file.append(float(line[1])*100/(float(line[1])+float(line[2])))
             mean_errors_normal_file.append(float(line[5]))
             mean_errors_actual_file.append(float(line[6]))
         success_rates.append(success_rates_file)
@@ -156,17 +156,20 @@ def plot_scenario(files: list[str], parameter="success"):
         mean_errors_actual.append(mean_errors_actual_file)
     if parameter == "success":
         for i in range(len(files)):
-            plt.plot(success_rates[i], label=" ".join(files[i].split("_")[7:9]))
+            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
+            plt.plot(success_rates[i], label=label)
         plt.title(files[i].split("_")[5] + " : Attack Success Rate")
         plt.ylabel("Success Rate")
     elif parameter == "error_normal":
         for i in range(len(files)):
-            plt.plot(mean_errors_normal[i], label=" ".join(files[i].split("_")[7:9]))
+            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
+            plt.plot(mean_errors_normal[i], label=label)
         plt.title(files[i].split("_")[5] + " : Mean Error Normal")
         plt.ylabel("Mean Error")
     elif parameter == "error_actual":
         for i in range(len(files)):
-            plt.plot(mean_errors_actual[i], label=" ".join(files[i].split("_")[7:9]))
+            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
+            plt.plot(mean_errors_actual[i], label=label)
         plt.title(files[i].split("_")[5] + " : Mean Error Actual")
         plt.ylabel("Mean Error Actual")
     plt.xlabel("Number of fake APs")
@@ -187,7 +190,7 @@ def plot_method(files: list[str], parameter="success"):
             reader = csv.reader(f)
             data = np.array(list(reader))
         for line in data[1:]:
-            success_rates_file.append(float(line[1])*100/float(line[7]))
+            success_rates_file.append(float(line[1])*100/(float(line[1])+float(line[2])))
             mean_errors_normal_file.append(float(line[5]))
             mean_errors_actual_file.append(float(line[6]))
         success_rates.append(success_rates_file)
@@ -265,11 +268,15 @@ if __name__ == '__main__':
     
     secure_files = ["results/secure_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
                     "results/secure_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv"]
+    
+    all_files = basic_files + secure_files
 
     # analyse_attack_scenarios("method", basic_files)
     # analyse_attack_scenarios("scenario", basic_files)
 
     # analyse_attack_scenarios("method", secure_files)   
-    analyse_attack_scenarios("scenario", secure_files) 
+    # analyse_attack_scenarios("scenario", secure_files)
+
+    analyse_attack_scenarios("method", all_files)
 
     plt.show()
