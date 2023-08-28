@@ -115,7 +115,7 @@ def simu01_variable_threshold_method():
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
     # Custom Input Data
-    size_of_the_sample = 100
+    size_of_the_sample = len(vld_r_m)
     k_min = 1
     k_max = 15
     limit_max = 0.8
@@ -590,8 +590,8 @@ if __name__ == '__main__':
     print("Done !")
 
     simu01_shared_coord_method()
-    # simu01_unshared_coord_method()
-    # simu01_variable_threshold_method()
+    simu01_unshared_coord_method()
+    simu01_variable_threshold_method()
 
     ##############################
 
