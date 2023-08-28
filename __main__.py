@@ -17,14 +17,14 @@ def simu01_shared_coord_method():
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
     # Custom Input Data
-    size_of_the_sample = 1000
+    size_of_the_sample = len(vld_r_m)
     k_min = 1
     k_max = 15
     limit_max = 15
     limit_min = 1
     tolerance_fail = 0.1
 
-    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+    fgpt_ids = [i for i in range(0, len(vld_r_m))]
 
     for limit in range(limit_max, limit_min - 1, -1):
         for k in range(k_min, k_max + 1):
@@ -66,14 +66,14 @@ def simu01_unshared_coord_method():
     data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
     # Custom Input Data
-    size_of_the_sample = 1000
+    size_of_the_sample = len(vld_r_m)
     k_min = 1
     k_max = 15
     limit_max = 25
     limit_min = 10
     tolerance_fail = 0.1
 
-    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+    fgpt_ids = [i for i in range(0, len(vld_r_m))]
 
     for limit in range(limit_min, limit_max + 1):
         for k in range(k_min, k_max + 1):
@@ -119,11 +119,11 @@ def simu01_variable_threshold_method():
     k_min = 1
     k_max = 15
     limit_max = 0.8
-    limit_min = 0.55
+    limit_min = 0.5
     limit_pas = 0.01
     tolerance_fail = 0.1
 
-    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+    fgpt_ids = [i for i in range(0, len(vld_r_m))]
 
     for limit in np.linspace(limit_min, limit_max, int((limit_max - limit_min) / limit_pas) + 1):
         for k in range(k_min, k_max + 1):
@@ -589,7 +589,7 @@ if __name__ == '__main__':
     vld_r_m.load_from_csv('datasets/ValidationData.csv')
     print("Done !")
 
-    # simu01_shared_coord_method()
+    simu01_shared_coord_method()
     # simu01_unshared_coord_method()
     # simu01_variable_threshold_method()
 
@@ -598,7 +598,7 @@ if __name__ == '__main__':
     # simu02_shared_coord_method()
     # simu02_unshared_coord_method()
     # simu02_variable_threshold_method()
-    simu02_overall()
+    # simu02_overall()
 
     ##############################
 
