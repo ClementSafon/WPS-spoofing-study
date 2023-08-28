@@ -114,6 +114,11 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
             predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit)
             end = time.time()
             duration = end - start
+        # case "OTHER":
+        #     start = time.time()
+        #     predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        #     end = time.time()
+        #     duration = end - start
         case _:
             print("Invalid method")
             return np.inf
