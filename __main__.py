@@ -6,77 +6,54 @@ import csv
 from radio_map import RadioMap
 import knn_algorithm as knn
 from matplotlib import pyplot as plt
+from metadata_gen import load_ap_max
+import matplotlib as mpl
 
-def simu1_display(error_positions, error_floors):
-    """ Display the results of the simulation 1."""
-    print(" -> location:")
-    print("# Mean error: ", np.mean(error_positions))
-    print("# Standard deviation: ", np.std(error_positions))
-    print("# Max error: ", np.max(error_positions))
-    print("# Min error: ", np.min(error_positions))
-    print("# Median error: ", np.median(error_positions))
-    print("# 25th percentile: ", np.percentile(error_positions, 25))
-    print("# 75th percentile: ", np.percentile(error_positions, 75))
-    print("# 90th percentile: ", np.percentile(error_positions, 90))
-    print("# 95th percentile: ", np.percentile(error_positions, 95))
-    print("# 99th percentile: ", np.percentile(error_positions, 99))
-    print("# 99.99th percentile: ", np.percentile(error_positions, 99.99))
-    print(" -> Floor:")
-    print("# Mean error: ", np.mean(error_floors))
-    print("# Standard deviation: ", np.std(error_floors))
-    print("# Max error: ", np.max(error_floors))
-    print("# Min error: ", np.min(error_floors))
-    print("# Median error: ", np.median(error_floors))
+## Simulations
 
-def simu10_find_error(n_neighbors, limit, row):
-    """ Find the mean error for a given number of neighbors and limit on the position of a row."""
-    trgt_r_m = vld_r_m.fork([row])
-    predicted_position = knn.find_position(n_neighbors, trning_r_m, trgt_r_m, limit)
-    if (predicted_position == [0,0,0]).all():
-        return np.inf
-    actual_2d_position = trgt_r_m.get_positions()[0]
-    actual_floor = trgt_r_m.get_floors()[0]
-    floor_height = 3.0
-    actual_position = np.array([actual_2d_position[0], actual_2d_position[1], actual_floor * floor_height])
-    predicted_position = np.array([predicted_position[0], predicted_position[1], predicted_position[2] * floor_height])
-    error_position = np.linalg.norm(
-        predicted_position - actual_position)
-    return error_position
-
-def simu10():
+# Find the best parameters : SIMU 0X
+def simu01_shared_coord_method():
     """ find all the errors for all the K,LIMIT combinations."""
-    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    rows = np.random.randint(0, len(vld_r_m.get_data()), 300)
-    k_max = 30
-
+    # Custom Input Data
+    size_of_the_sample = 1000
+    k_min = 1
+    k_max = 15
+    limit_max = 15
+    limit_min = 1
     tolerance_fail = 0.1
 
-    for limit in range(10, 1, -1):
-        for k in range(1, k_max):
-            errors = []
-            fail = 0
-            for i, row in enumerate(rows):
-                print(round((i / len(rows)) * 100,2), "%         ", end="\r")
-                error = simu10_find_error(k, limit, row)
-                if error != np.inf:
-                    errors.append(error)
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+
+    for limit in range(limit_max, limit_min - 1, -1):
+        for k in range(k_min, k_max + 1):
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="SC")
+                if position_error == np.inf:
+                    count_fail += 1
                 else:
-                    fail += 1
-                if fail / len(rows) > tolerance_fail:
-                    errors = []
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
                     break
-            if len(errors) > 0:
-                data.append([limit, k, np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), np.percentile(errors, 25), np.percentile(errors, 75), np.percentile(errors, 90), np.percentile(errors, 95), np.percentile(errors, 99), np.percentile(errors, 99.99)])
-                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(errors),2))
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(position_errors),2))
             else:
                 print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
-                print("...")
-                for k in range(k, k_max):
-                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                for k in range(k, k_max + 1):
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
                 break
 
-    csv_file = "output.csv"
+    csv_file = "results/K_L_evaluation_using_SC_method_"+str(k_max)+"_"+str(limit_max)+"_"+str(tolerance_fail)+"_.csv"
 
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -84,370 +61,568 @@ def simu10():
 
     print(f"CSV file '{csv_file}' created successfully.")
 
-def simu10_bis():
-    """ find the coverage for a k, and limit combination."""
-    k = 7
-    limit = 19
+def simu01_unshared_coord_method():
+    """ find all the errors for all the K,LIMIT combinations."""
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
 
-    rows = [i for i in range(len(vld_r_m.get_data()))]
+    # Custom Input Data
+    size_of_the_sample = 1000
+    k_min = 1
+    k_max = 15
+    limit_max = 25
+    limit_min = 10
+    tolerance_fail = 0.1
+
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+
+    for limit in range(limit_min, limit_max + 1):
+        for k in range(k_min, k_max + 1):
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="UC")
+                if position_error == np.inf:
+                    count_fail += 1
+                else:
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
+                    break
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(position_errors),2))
+            else:
+                print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
+                for k in range(k, k_max + 1):
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                break
+
+    csv_file = "results/K_L_evaluation_using_UC_method_"+str(k_max)+"_"+str(limit_max)+"_"+str(tolerance_fail)+"_.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    print(f"CSV file '{csv_file}' created successfully.")
+
+def simu01_variable_threshold_method():
+    """ find all the errors for all the K,LIMIT combinations."""
+    data = [["LIMIT", "K", "MEAN_ERROR", "STD_ERROR", "FAILRATE", "MAX_ERROR", "MIN_ERROR", "MEDIAN_ERROR", "25th_PERCENTILE", "75th_PERCENTILE", "90th_PERCENTILE", "95th_PERCENTILE", "99th_PERCENTILE", "99.99th_PERCENTILE"]]
+
+    # Custom Input Data
+    size_of_the_sample = 100
+    k_min = 1
+    k_max = 15
+    limit_max = 0.8
+    limit_min = 0.55
+    limit_pas = 0.01
+    tolerance_fail = 0.1
+
+    fgpt_ids = np.random.randint(0, len(vld_r_m), size_of_the_sample)
+
+    for limit in np.linspace(limit_min, limit_max, int((limit_max - limit_min) / limit_pas) + 1):
+        for k in range(k_min, k_max + 1):
+            position_errors = []
+            count_fail = 0
+            for i, fgpt_id in enumerate(fgpt_ids):
+                print(round((i / len(fgpt_ids)) * 100,2), " "*(4-len(str(round((i / len(fgpt_ids)) * 100,0)))) + "%", end="\r")
+                position_error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="VT")
+                if position_error == np.inf:
+                    count_fail += 1
+                else:
+                    position_errors.append(position_error)
+                if count_fail / len(fgpt_ids) > tolerance_fail:
+                    position_errors = []
+                    break
+            if len(position_errors) > 0:
+                data.append([limit, k, np.mean(position_errors), np.std(position_errors), count_fail/len(fgpt_ids),
+                             np.max(position_errors), np.min(position_errors), np.median(position_errors), 
+                             np.percentile(position_errors, 25), np.percentile(position_errors, 75), 
+                             np.percentile(position_errors, 90), np.percentile(position_errors, 95), 
+                             np.percentile(position_errors, 99), np.percentile(position_errors, 99.99)])
+                print("K=", k, " LIMIT=", limit, " -> ", round(np.mean(position_errors),2))
+            else:
+                print("K=", k, " LIMIT=", limit, " -> ", "x                                  ")
+                for k in range(k, k_max + 1):
+                    data.append([limit, k, "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"])  
+                break
+
+    csv_file = "results/K_L_evaluation_using_VT_method_"+str(k_max)+"_"+str(limit_pas)+"_"+str(tolerance_fail)+"_.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    print(f"CSV file '{csv_file}' created successfully.")
+
+
+############################################################################################################
+
+# Test the best K and LIMIT
+def simu02_shared_coord_method():
+    """ find the error for a k, and limit combination."""    
+
+    k = 11
+    limit = 7
+
     errors = []
     failed = 0
-    print('Total: ', len(rows))
-    for row in rows:
-        print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-        error = simu10_find_error(k, limit, row)
+    sum_durations = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="SC")
+        sum_durations += knn.duration
         if error != np.inf:
             errors.append(error)
         else:
             failed += 1
-    print()
-    print("K=", k, " LIMIT=", limit, " -> ", np.mean(errors))
-    print("Failed: ", failed, "/", len(rows), " -> ", failed / len(rows))
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
 
+def simu02_unshared_coord_method():
+    """ find the error for a k, and limit combination."""    
 
-def simu11():
-    """ find the mean error for a validation dataset where some rows are alterated."""
     k = 7
-    limit = 19
+    limit = 16
+
+    errors = []
+    failed = 0
+    sum_durations = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="UC")
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
+
+def simu02_variable_threshold_method():
+    """ find the error for a k, and limit combination."""    
+
+    k = 11
+    limit = 0.64
+
+    errors = []
+    failed = 0
+    sum_durations = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="VT")
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+    print("Time to compute one position : ", round((sum_durations/len(vld_r_m))*1000,2), "ms")
+
+def simu02_overall():
+    """ find the performance for each methods. """
+
+    methods = ["SC", "UC", "VT", "SECU"]
+    k_l_values = [(11,7), (7,16), (11,0.64), (7,16)]
+
+    data = [["method", "(k,l)", "mean_error", "std_error", "max_error", "min_error", "median_error", "failed", "time_to_compute_one_position"]]
+
+    for method, k_l_value in zip(methods, k_l_values):
+        errors = []
+        failed = 0
+        sum_durations = 0
+        print("Method: ", method)
+        for fgpt_id in range(len(vld_r_m)):
+            print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+            error = knn.find_position_error(k_l_value[0], trning_r_m, vld_r_m.get_fingerprint(fgpt_id), k_l_value[1], method=method)
+            sum_durations += knn.duration
+            if error != np.inf:
+                errors.append(error)
+            else:
+                failed += 1
+        
+        data.append([method, k_l_value, np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), round(failed*100/len(vld_r_m),2), round((sum_durations/len(vld_r_m))*1000,2)])
+
+    csv_file = "results/K_L_overall_performance_evaluations.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    
+    print(f"CSV file '{csv_file}' created successfully.")
+
+############################################################################################################
+
+# Test Basic KNN-Algo on Corrupted Data : SIMU 1X
+def simu1X_scenarioX_XX_method(k: int, limit: float, scenario: str, method: str, find: callable):
+    data = [["FILE", "ATTACK_SUCCESSFUL", "ATTACK_FAILED", "POSITIONING_FAIL", "NORMAL_POSITIONING_FAIL", "MEAN_ERROR_NORMAL_RSS", "MEAN_ERROR_ACTUAL_POSITION", "TOTAL_OF_ATTACK"]]
 
     for file_index in range(1,11):
-
         vld_X_r_m = RadioMap()
-        vld_X_r_m.load('juraj_data/ValidationData_' + str(file_index) + '.csv')
+        vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(file_index) + '.csv')
 
-
-        rows = [i for i in range(len(vld_X_r_m.get_data()))]
-
-        attack_success = 0
-        fail_due_to_attack = 0
-        fail = 0
-        unfail_due_to_attack = 0
-        attack_deviations = []
+        n_attack_successfull = 0
+        n_attack_failed = 0
+        positioning_failed = 0
+        normal_positioning_failed = 0
+        distance_error_normal_rss = []
+        distance_error_actual_position = []
+        total_of_attack = len(vld_X_r_m)
         print('ValidationData_' + str(file_index) + '.csv')
-        for row in rows:
-            print(str(row) + " / " + str(len(rows)) + " -> " + str(round((row / len(rows)) * 100,2)) + "%", end="\r")
-            estimated_position = knn.find_position(k, trning_r_m, vld_X_r_m.fork([row]), limit)
-            position = knn.find_position(k, trning_r_m, vld_r_m.fork([row]), limit)
-            null_pos = (position == [0,0,0]).all()
-            null_est = (estimated_position == [0,0,0]).all()
-            if (estimated_position != position).all():
-                attack_success += 1
-                if not null_est and not null_pos:
-                    attack_deviations.append(np.linalg.norm(estimated_position - position))
-            if null_est and not null_pos:
-                fail_due_to_attack += 1
-            if not null_est and null_pos:
-                unfail_due_to_attack += 1
-            if null_pos:
-                fail += 1
+        for fgpt_id in range(len(vld_X_r_m)):
+            print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+            predicted_position = find(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit)
+            normal_predicted_position = find(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
+            actual_position = vld_X_r_m.get_position(fgpt_id)
+            null_pred_pos = (predicted_position == [0,0,0]).all()
+            null_norm_pos = (normal_predicted_position == [0,0,0]).all()
+
+            if null_norm_pos:
+                normal_positioning_failed += 1
+            if null_pred_pos:
+                positioning_failed += 1
+                n_attack_failed += 1
+            else:
+                if (predicted_position != normal_predicted_position).all():
+                    n_attack_successfull += 1
+                    if not null_norm_pos and not null_pred_pos:
+                        distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
+                        distance_error_actual_position.append(np.linalg.norm(predicted_position - vld_X_r_m.get_position(fgpt_id)))
+                else:
+                    n_attack_failed += 1
+                    
+        data.append(["ValidationData_" + str(file_index) + '.csv', n_attack_successfull, n_attack_failed, positioning_failed, normal_positioning_failed, np.mean(distance_error_normal_rss), np.mean(distance_error_actual_position), total_of_attack])
             
-        print()
-        print("Number of attack successful: ", attack_success, "/", len(rows), " -> " + str(round((attack_success / len(rows)) * 100,2))+ "%")
-        print("Distance error due to attack -> ", np.mean(attack_deviations))
-        print("Number of fail due to attack: ", fail_due_to_attack, "/", len(rows), " -> " + str(round((fail_due_to_attack / len(rows)) * 100,2)) + "%")
-        print("unfail due to attack: ", unfail_due_to_attack, "/", len(rows), " -> " + str(round((unfail_due_to_attack / len(rows)) * 100,2)) + "%")
-        print("Number of fail: ", fail, "/", len(rows), " -> " + str(round((fail / len(rows)) * 100,2)) + "%")
-        print()
+    csv_file = "results/basic_knn_on_corrupted_dataset_" + scenario + "_using_" + method + "_method_K"+str(k)+"_L"+str(limit)+"_.csv"
+
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    print(f"CSV file '{csv_file}' created successfully.")
+
+# Scenario 1
+def simu11_scenario1_SC_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 11
+    limit = 7
+    scenario = "scenario1"
+    method = "SC"
+    find = knn.find_position_SC_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
+
+def simu11_scenario1_UC_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 7
+    limit = 16
+    scenario = "scenario1"
+    method = "UC"
+    find = knn.find_position_UC_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
+
+def simu11_scenario1_VT_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 4
+    limit = 0.6
+    scenario = "scenario1"
+    method = "VT"
+    find = knn.find_position_VT_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
+    
+# Scenario 2
+def simu12_scenario2_SC_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 11
+    limit = 7
+    scenario = "scenario2"
+    method = "SC"
+    find = knn.find_position_SC_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
+
+def simu12_scenario2_UC_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 7
+    limit = 16
+    scenario = "scenario2"
+    method = "UC"
+    find = knn.find_position_UC_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
+
+def simu12_scenario2_VT_method():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 4
+    limit = 0.6
+    scenario = "scenario2"
+    method = "VT"
+    find = knn.find_position_VT_method
+
+    simu1X_scenarioX_XX_method(k, limit, scenario, method, find)
 
 
-def simu2():
-    """ Simulate many spoofing scenarios."""
-    errors_l = []
-    success, fail, total = 0, 0, 0
-    log_penality = False
-    for i in np.random.randint(0, len(vld_r_m.get_data()), 50):
-        for j in np.random.randint(0, len(vld_r_m.get_data()), 100):
-            if vld_r_m.get_data()[i]["BUILDINGID"] != vld_r_m.get_data()[j]["BUILDINGID"]:
-                print("Spoofing on row ", i, " with row ", j)
-                trgt_r_m = vld_r_m.fork([i])
-                trgt_r_m.spoof(0, vld_r_m, j)
-                pos, dist = knn.run(3, False, False, trning_r_m, trgt_r_m, log_penality)[:2]
-                pos_expected = vld_r_m.fork([i]).get_positions()[0]
-                pos_fake_APs = vld_r_m.fork([j]).get_positions()[0]
-                if (pos[0] != pos_expected).all():
-                    dist_to_fake_APs = np.linalg.norm(pos[0] - pos_fake_APs)
-                    if dist_to_fake_APs <= confidence_value:
-                        success += 1
-                    elif dist[0] <= confidence_value:
-                        fail += 1
+#############################################################################################################
+
+# Security tests
+def simu2X_scenarioX_XX_method(k: int, limit: float, scenario: str, method: str, find: callable):
+    data = [["FILE", "ATTACK_SUCCESSFUL", "ATTACK_FAILED", "POSITIONING_FAIL", "NORMAL_POSITIONING_FAIL", "MEAN_ERROR_NORMAL_RSS", "MEAN_ERROR_ACTUAL_POSITION", "TOTAL_OF_ATTACK"]]
+
+    for file_index in range(1,11):
+        vld_X_r_m = RadioMap()
+        vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(file_index) + '.csv')
+
+        n_attack_successfull = 0
+        n_attack_failed = 0
+        positioning_failed = 0
+        normal_positioning_failed = 0
+        distance_error_normal_rss = []
+        distance_error_actual_position = []
+        total_of_attack = 0
+        print('ValidationData_' + str(file_index) + '.csv')
+        for fgpt_id in range(len(vld_X_r_m)):
+            print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+            predicted_position = find(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit)
+            normal_predicted_position = find(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit)
+            actual_position = vld_X_r_m.get_position(fgpt_id)
+            null_pred_pos = (predicted_position == [0,0,0]).all()
+            null_norm_pos = (normal_predicted_position == [0,0,0]).all()
+
+            
+            if null_norm_pos:
+                normal_positioning_failed += 1
+            if null_pred_pos:
+                positioning_failed += 1
+                n_attack_failed += 1
+            else:
+                if (predicted_position != normal_predicted_position).all():
+                    n_attack_successfull += 1
+                    if not null_norm_pos and not null_pred_pos:
+                        distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
+                        distance_error_actual_position.append(np.linalg.norm(predicted_position - vld_X_r_m.get_position(fgpt_id)))
                 else:
-                    fail += 1
-                total += 1
-                errors_l.append(dist[0])
-    print("Success number: ", success, " / ", total, " (", success/total*100, "%)")
-    print("Fail number: ", fail, " / ", total, " (", fail/total*100, "%)")
-    print("Partial success number: ", total - success - fail, " / ", total, " (", (
-        total - success - fail)/total*100, "%)")
-    print("##############-More Info-####################")
-    print("Mean error: ", np.mean(errors_l))
-    print("Standard deviation: ", np.std(errors_l))
-    print("Max error: ", np.max(errors_l))
-    print("Min error: ", np.min(errors_l))
-    print("Median error: ", np.median(errors_l))
-    print("25th percentile: ", np.percentile(errors_l, 25))
-    print("75th percentile: ", np.percentile(errors_l, 75))
-    print("90th percentile: ", np.percentile(errors_l, 90))
-    print("95th percentile: ", np.percentile(errors_l, 95))
-    print("99th percentile: ", np.percentile(errors_l, 99))
-    print("99.99th percentile: ", np.percentile(errors_l, 99.99))
+                    n_attack_failed += 1
+                    
 
-def simu2_spoofing(spoofed_row, spoofing_row):
-    """ Simulate the spoofing."""
-    trgt_r_m = vld_r_m.fork([spoofed_row])
-    witness_r_m = vld_r_m.fork([spoofed_row])
+            total_of_attack = len(vld_X_r_m)
+                    
+        data.append(["ValidationData_" + str(file_index) + '.csv', n_attack_successfull, n_attack_failed, positioning_failed, normal_positioning_failed, np.mean(distance_error_normal_rss), np.mean(distance_error_actual_position), total_of_attack])
+            
+    csv_file = "results/secure_knn_on_corrupted_dataset_" + scenario + "_using_" + method + "_method_K"+str(k)+"_L"+str(limit)+"_.csv"
 
-    log_penality = True
+    with open(csv_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    print(f"CSV file '{csv_file}' created successfully.")
 
-    trgt_r_m.spoof(0, vld_r_m, spoofing_row)
-    average_positions, error = knn.run_explicite(
-        3, trning_r_m, trgt_r_m, log_penality)[:2]
-    witness_average_positions = knn.run_explicite(3, trning_r_m, witness_r_m, log_penality
-                            )[0][0]
+def simu21_scenario1_UC_method_secu():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 7
+    limit = 16
+    scenario = "scenario1"
+    method = "UC"
+    find = knn.find_position_secure
 
-    title = f"Spoofing with valid fingerprint (on row {spoofed_row})"
-    graph.plot_radio_map(trning_r_m, title=title, new_figure=True)
-    graph.plot_point(average_positions[0], args='ro', label='Estimated position')
-    graph.plot_point(witness_average_positions, args='yo', label='Estimated position without spoofing')
-    graph.plot_point(vld_r_m.fork([spoofing_row]).get_positions()[0]
-                                , args='ko', label='Position of the point that is used to spoof')
-    graph.plot_point(trgt_r_m.get_positions()[0], args='go', label='Real position')
-    graph.plot_confidence_circle(average_positions[0], confidence_value)
-    graph.show()
-    return error[0]
+def simu21_scenario2_UC_method_secu():
+    """ find the mean error for a validation dataset where some rows are alterated."""
+    k = 7
+    limit = 16
+    scenario = "scenario2"
+    method = "UC"
+    find = knn.find_position_secure
 
-def sim3_randoom_spoofing(spoofed_row, seed):
-    """ Simulate the random spoofing."""
-    trgt_r_m = vld_r_m.fork([spoofed_row])
-    witness_r_m = vld_r_m.fork([spoofed_row])
+    simu2X_scenarioX_XX_method(k, limit, scenario, method, find)
 
+def simu22_UC_method_secu():
+    """ find the error for a k, and limit combination."""    
 
-    trgt_r_m.random_spoof(0, seed)
-    average_positions = knn.run(
-        3, False, True, trning_r_m, trgt_r_m, log_penality=False)
+    k = 7
+    limit = 16
 
-    title = f"Spoofing with completly random fingerprint (on row {spoofed_row})"
-    graph.plot_radio_map(trning_r_m,
-                      title=title, new_figure=True)
-    graph.plot_point(average_positions[0], args='ro', label='Estimated position')
-    graph.plot_point(knn.run(3, False, True, trning_r_m, witness_r_m, log_penality=False
-                            )[0][0], args='yo', label='Estimated position without spoofing')
-    graph.plot_point(trgt_r_m.get_positions_by_row(0), args='go', label='Real position')
-    graph.plot_confidence_circle(average_positions[0], confidence_value)
-    graph.show()
-
-def simu4_all_spoofing(spoofed_row, spoofing_row, seed):
-    """ Simulate the spoofing."""
-    trgt_r_m = vld_r_m.fork([spoofed_row])
-    witness_r_m = vld_r_m.fork([spoofing_row])
-
-
-    trgt_r_m.spoof(spoofed_row, vld_r_m, spoofing_row)
-    average_positions = knn.run(
-        3, False, True, trning_r_m, trgt_r_m, log_penality=False)[0]
-
-    title = f"Spoofing with valid fingerprint (on row {spoofed_row})"
-    graph.plot_radio_map(trning_r_m, title=title, new_figure=True)
-    graph.plot_point(average_positions[0], args='ro', label='Estimated position')
-    graph.plot_point(knn.run(3, False, True, trning_r_m, witness_r_m, log_penality=False
-                            )[0][0], args='yo', label='Estimated position without spoofing')
-    graph.plot_point(vld_r_m.fork([spoofing_row]).get_positions_by_row(spoofing_row
-                                    ), args='yo', label='Position of the point that is spoofed')
-    graph.plot_point(trgt_r_m.get_positions()[0], args='go')
-    graph.plot_confidence_circle(average_positions[0], confidence_value)
-
-    trgt_r_m = vld_r_m.fork([spoofed_row])
-    witness_r_m = vld_r_m.fork([spoofed_row])
-
-
-    trgt_r_m.random_spoof(0, seed)
-    average_positions = knn.run(
-        3, False, True, trning_r_m, trgt_r_m, log_penality=False)
-
-    title = f"Spoofing with completly random fingerprint (on row {spoofed_row})"
-    graph.plot_radio_map(trning_r_m,
-                      title=title, new_figure=True)
-    graph.plot_point(average_positions[0], args='ro', label='Estimated position')
-    graph.plot_point(knn.run(3, False, True, trning_r_m, witness_r_m, log_penality=False
-                            )[0][0], args='yo', label='Estimated position without spoofing')
-    graph.plot_point(trgt_r_m.get_positions_by_row(0), args='go', label='Real position')
-    graph.plot_confidence_circle(average_positions[0], confidence_value)
-    graph.show()
-
-def simu5():
-    """ Simulate attack be re-emitting received beacons """
-    """ Simulate many spoofing scenarios."""
-    errors_l = []
-    success, fail, total = 0, 0, 0
-    log_penality = False
-    indexes = np.random.randint(0, len(vld_r_m.get_data()), 250)
-    trgt_r_m = vld_r_m.fork(indexes)
-    for i in range(len(indexes)):
-        trgt_r_m.reemitting_spoof(i)
-    pos, dist = knn.run(3, False, False, trning_r_m, trgt_r_m, log_penality)[:2]
-    pos_expected = vld_r_m.fork(indexes).get_positions()[0]
-    for i in range(len(indexes)):
-        if (pos[i] != pos_expected).all():
-            if dist[i] > confidence_value:
-                success += 1
-            elif dist[i] <= confidence_value:
-                fail += 1
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="SECU")
+        if error != np.inf:
+            errors.append(error)
         else:
-            fail += 1
-        total += 1
-        errors_l.append(dist[i])
-    print("Success number: ", success, " / ", total, " (", success/total*100, "%)")
-    print("Fail number: ", fail, " / ", total, " (", fail/total*100, "%)")
-    print("##############-More Info-####################")
-    print("Mean error: ", np.mean(errors_l))
-    print("Standard deviation: ", np.std(errors_l))
-    print("Max error: ", np.max(errors_l))
-    print("Min error: ", np.min(errors_l))
-    print("Median error: ", np.median(errors_l))
-    print("25th percentile: ", np.percentile(errors_l, 25))
-    print("75th percentile: ", np.percentile(errors_l, 75))
-    print("90th percentile: ", np.percentile(errors_l, 90))
-    print("95th percentile: ", np.percentile(errors_l, 95))
-    print("99th percentile: ", np.percentile(errors_l, 99))
-    print("99.99th percentile: ", np.percentile(errors_l, 99.99))
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
 
-def simu6_single(spoofed_row=0, spoofing_row=123):
-    """ simu6_single one calculation, run_secure knn algo to detect the attack  """
-    trgt_r_m = vld_r_m.fork([spoofed_row, spoofed_row])
 
-    trgt_r_m.spoof(0, vld_r_m, spoofing_row)
+##############################################################################################################
 
-    knn.run_secure(3, True, trning_r_m, trgt_r_m, method="distance")[:2]
+# Other simulations
+def display_AP_fingerprints(id_AP: int):
+    """ Display the fingerprints of the AP with the id id_AP. """
+    x_coords, y_coords = [], []
+    rss_values = []
+    timestamps = []
+    for fingerprint in trning_r_m.get_fingerprints():
+        rssi = fingerprint.get_rss()[id_AP - 1]
+        if rssi != 100:
+            fgpt_lon = fingerprint.get_position()[0]
+            fgpt_lat = fingerprint.get_position()[1]
+            fgpt_timestamp = fingerprint.get_timestamp()
+            if fgpt_lon in x_coords and fgpt_lat == y_coords[x_coords.index(fgpt_lon)]:
+                index = x_coords.index(fgpt_lon)
+                if fgpt_timestamp > timestamps[index]:
+                    rss_values[index] = rssi
+                    timestamps[index] = fgpt_timestamp
+            else:
+                x_coords.append(fgpt_lon)
+                y_coords.append(fgpt_lat)
+                rss_values.append(rssi)
+                timestamps.append(fgpt_timestamp)
+    if len(rss_values) == 0:
+        print("No data for this AP")
+        return
 
-def simu6(method):
-    """ same as simu 2 but with knn-secure algo"""
-    """ Simulate many spoofing scenarios."""
-    errors_l = []
-    success, fail, total, detected, partial_success = 0, 0, 0, 0, 0
-    for i in np.random.randint(0, len(vld_r_m.get_data()), 50):
-        for j in np.random.randint(0, len(vld_r_m.get_data()), 1):
-            if vld_r_m.get_data()[i]['BUILDINGID'] != vld_r_m.get_data()[j]['BUILDINGID']:
-                print("Spoofing on row ", i, " with row ", j)
-                trgt_r_m = vld_r_m.fork([i])
-                trgt_r_m.spoof(0, vld_r_m, j)
-                pos, dist = knn.run_secure(3, False, trning_r_m, trgt_r_m, method)[:2]
-                pos_expected = vld_r_m.fork([i]).get_positions()[0]
-                pos_fake_APs = vld_r_m.fork([j]).get_positions()[0]
-                if (pos[0] != pos_expected).all():
-                    if pos[0][0] == -1:
-                        detected += 1
-                    else:
-                        dist_to_fake_APs = np.linalg.norm(pos[0] - pos_fake_APs)
-                        if dist[0] <= confidence_value:
-                            fail += 1
-                        elif dist_to_fake_APs <= confidence_value:
-                            success += 1
-                        else:
-                            partial_success += 1
-                else:
-                    fail += 1
-                total += 1
-                if dist[0] != -1:
-                    errors_l.append(dist[0])
-    print("Success number: ", success, " / ", total, " (", success/total*100, "%)")
-    print("Fail number: ", fail, " / ", total, " (", fail/total*100, "%)")
-    print("Partial success number: ", partial_success, " / ", total, " (", partial_success/total*100, "%)")
-    print("Detected number: ", detected, " / ", total, " (", detected/total*100, "%)")
-    if len(errors_l) > 0:
-        print("##############-More Info-####################")
-        print("Mean error: ", np.mean(errors_l))
-        print("Standard deviation: ", np.std(errors_l))
-        print("Max error: ", np.max(errors_l))
-        print("Min error: ", np.min(errors_l))
-        print("Median error: ", np.median(errors_l))
-        print("25th percentile: ", np.percentile(errors_l, 25))
-        print("75th percentile: ", np.percentile(errors_l, 75))
-        print("90th percentile: ", np.percentile(errors_l, 90))
-        print("95th percentile: ", np.percentile(errors_l, 95))
-        print("99th percentile: ", np.percentile(errors_l, 99))
-        print("99.99th percentile: ", np.percentile(errors_l, 99.99))
-    else:
-        print("No error")
+    normalized_timestamps = (np.array(timestamps) - np.min(timestamps)) / (np.max(timestamps) - np.min(timestamps))
 
-def simu6_bis(method):
-    """ same as simu 2 but with knn-secure algo"""
-    """ Simulate many spoofing scenarios."""
-    errors_l = []
-    total, detected = 0, 0
-    for i in np.random.randint(0, len(vld_r_m.get_data()), 50):
-        print("Estimating position of row ", i)
-        trgt_r_m = vld_r_m.fork([i])
-        pos, dist = knn.run_secure(3, False, trning_r_m, trgt_r_m, method)[:2]
-        if dist[0] == -1:
-            detected += 1
-        else:
-            errors_l.append(dist[0])
-        total += 1
-    print("Detected number: ", detected, " / ", total, " (", detected/total*100, "%)")
-    if len(errors_l) > 0:
-        print("##############-More Info-####################")
-        print("Mean error: ", np.mean(errors_l))
-        print("Standard deviation: ", np.std(errors_l))
-        print("Max error: ", np.max(errors_l))
-        print("Min error: ", np.min(errors_l))
-        print("Median error: ", np.median(errors_l))
-        print("25th percentile: ", np.percentile(errors_l, 25))
-        print("75th percentile: ", np.percentile(errors_l, 75))
-        print("90th percentile: ", np.percentile(errors_l, 90))
-        print("95th percentile: ", np.percentile(errors_l, 95))
-        print("99th percentile: ", np.percentile(errors_l, 99))
-        print("99.99th percentile: ", np.percentile(errors_l, 99.99))
-    else:
-        print("No error")
+    graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3)
+    colormap = plt.colormaps.get_cmap('viridis')
+    scatter = plt.scatter(x_coords, y_coords, c=rss_values, cmap=colormap, marker='o', s=60, vmin=-110, vmax=0)
+    cbar = plt.colorbar(scatter)
+    cbar.set_label('RSSI')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('RSSI of AP ' + str(id_AP) + " (normalized)\nn_fgpts = " + str(len(rss_values)))
+
+    graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3)
+    scatter = plt.scatter(x_coords, y_coords, c=normalized_timestamps, cmap=colormap, marker='o', s=60)
+    cbar = plt.colorbar(scatter)
+    cbar.set_label('Timestamp')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('Timestamp of AP ' + str(id_AP) + " (normalized)\nn_fgpts = " + str(len(rss_values)))
+
+    plt.show()
 
 def tmp():
-    test_r_m = RadioMap()
-    test_r_m.load('clement_data/ValidationData_1.csv')
-    count1 = 0
-    count2 = 0
-    for i, row in enumerate(test_r_m.get_data()):
-        if (np.array(row['rss']) == np.array(vld_r_m.get_data_by_row([i])[0]['rss'])).all():
-            count1 += 1
-        if np.sum(np.array(row['rss']) != 100) < 3:
-            count2 += 1
-    print(count1)
-    print(count2)
+    """ Temporary function. """
+    removed_fingerprints = []
+    for tol_i, tol in enumerate(np.linspace(0, 1, 10)):
+        # show the progress
+        print(tol*100, "%", end="\r")
+        removed_fingerprints.append([])
+        for ap in range(len(trning_r_m.get_data()[0]['rss'])):
+            timestamp = np.zeros(len(trning_r_m.get_data()))
+            for row, fingerprint in enumerate(trning_r_m.get_data()):
+                if fingerprint['rss'][ap] != 100:
+                    timestamp[row] = fingerprint['TIMESTAMP']
+            remove_indexes = np.where(timestamp == 0)[0]
+            timestamp = np.delete(timestamp, remove_indexes)
+            r_i = np.argsort(timestamp)[int(len(timestamp) * tol):]
+            for i in r_i:
+                if i not in removed_fingerprints[tol_i]:
+                    removed_fingerprints[tol_i].append(i)
+        removed_fingerprints[tol_i] = len(removed_fingerprints[tol_i]) / len(trning_r_m.get_data())*100
+    plt.plot(np.linspace(0, 1, 10), np.array(removed_fingerprints))
+    plt.xlabel("Tolerance")
+    plt.ylabel("Percentage of removed fingerprints")
+    plt.title("Percentage of removed fingerprints as a function of the tolerance")
+    plt.show()
+
+def tmp2():
+    """ find the minimal error we can have with K=11"""    
+
+    k = 11
+    
+
+
+
+##############################################################################################################
 
 if __name__ == '__main__':
     td = time.time()
 
-    confidence_value = 24.42282
-
+    print("Loading data...")
     trning_r_m = RadioMap()
-    trning_r_m.load('data/TrainingData.csv')
+    trning_r_m.load_from_csv('datasets/TrainingData.csv')
     vld_r_m = RadioMap()
-    vld_r_m.load('data/ValidationData.csv')
+    vld_r_m.load_from_csv('datasets/ValidationData.csv')
+    print("Done !")
 
-    # Simulation 10
-    simu10()
-    # simu10_bis()
+    # simu01_shared_coord_method()
+    # simu01_unshared_coord_method()
+    # simu01_variable_threshold_method()
 
-    # Simulation 11
-    # simu11()
+    ##############################
 
-    # Simulation 2
-    # simu2()
-    # simu2_spoofing(290, 654)
-    # simu2_spoofing(1100, 650)
+    # simu02_shared_coord_method()
+    # simu02_unshared_coord_method()
+    # simu02_variable_threshold_method()
+    simu02_overall()
 
-    # Simulation 3
-    # sim3_randoom_spoofing(0, 123)
+    ##############################
 
-    # Simulation 4
-    # simu4_all_spoofing(0, 50, 123)
+    #scenario1
+    # simu11_scenario1_SC_method()
+    # simu11_scenario1_UC_method()
+    # simu11_scenario1_VT_method()
 
-    # Simulation 5
-    # simu5()
+    #scenario2
+    # simu12_scenario2_SC_method()
+    # simu12_scenario2_UC_method()
+    # simu12_scenario2_VT_method()
 
-    # Simulation 6
-    # simu6("distance_FA")
-    # simu6_bis("distance_FA")
-    # simu6_single(0, 123)
+    ##############################
+    
+    # Security tests
+    # simu21_scenario1_UC_method_secu()
+    # simu21_scenario2_UC_method_secu()
 
-    tmp()
+    # simu22_UC_method_secu()
+
+    # display_AP_fingerprints(243)
+
+    # tmp()
+    # tmp2()
 
     print("Executed in ", time.time() - td, " seconds")

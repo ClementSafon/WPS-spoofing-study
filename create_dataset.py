@@ -1,4 +1,5 @@
 from radio_map import RadioMap
+from metadata_gen import load_ap_max
 import numpy as np
 import copy
 import csv
@@ -46,11 +47,25 @@ def create_spoofed_r_m(radio_map: RadioMap, n_spoofed_AP: int, min_AP_on_rss: in
         victim_radio_map.data.append(new_fingerprint)
     return victim_radio_map
 
+def create_clean_r_m(radio_map: RadioMap, max_distance_threshold: float) -> RadioMap:
+    """ Create a radio map clean, making some data preprocessing. """
+    max_distances = np.array(load_ap_max(radio_map))
+    clean_radio_map = RadioMap()
+    indexes_to_remove = np.where(max_distances > max_distance_threshold)[0]
+    for row in radio_map.get_data():
+        new_row = copy.deepcopy(row)
+        new_row['rss'] = np.delete(np.array(new_row['rss']), indexes_to_remove).tolist()
+        clean_radio_map.data.append(new_row)
+    return clean_radio_map, indexes_to_remove
+
 
 if __name__ == '__main__':
     radio_map = RadioMap()
-    radio_map.load('data/ValidationData.csv')
+    radio_map.load('data/TrainingData.csv')
 
-    for i in range(1, 11):
-        victim_r_m = create_spoofed_r_m(radio_map, i, 3)
-        create_dataset(victim_r_m, 'clement_data/ValidationData_' + str(i) + '.csv')
+    threshold = 167
+    clean_radio_map, index_to_remove = create_clean_r_m(radio_map, 200)
+    create_dataset(clean_radio_map, 'data/other/clean_TrainingData.csv')
+    with open('data/other/index_to_remove.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+        writer.writerow(index_to_remove)
