@@ -1,5 +1,5 @@
 from radio_map import RadioMap
-from metadata_gen import load_ap_max
+from tools.metadata_gen import load_ap_max
 import numpy as np
 import copy
 import csv

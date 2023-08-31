@@ -1,16 +1,15 @@
 """ KNN algorithm for indoor localization based on WAP fingerprints"""
-import sys
-import math
 import numpy as np
 from radio_map import RadioMap
-import graph
-from metadata_gen import load_blacklist, load_ap_max
+from tools.metadata_gen import load_ap_max
 from fingerprint import Fingerprint
-import time
 
 duration = 0
 
-def find_position_SC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
+
+### Basic Positioning methods ###
+
+def find_position_SC_method(k_neighbors: int, limit: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Return (0,0,0) if the limit can't be found."""
 
@@ -28,17 +27,17 @@ def find_position_SC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
                     ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 0
 
     distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
-    if len(distances) < n_neighbors:
+    if len(distances) < k_neighbors:
         return np.array([0, 0, 0])
 
-    sorted_indices = np.argsort(distances)
-    average_position = np.mean(filtered_trning_pos_matrix[sorted_indices[:n_neighbors]], axis=0)
+    sorted_indexes = np.argsort(distances)
+    average_position = np.mean(filtered_trning_pos_matrix[sorted_indexes[:k_neighbors]], axis=0)
 
     return average_position
 
-def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
+def find_position_UC_method(k_neighbors: int, limit: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
-    Retur (0,0,0) if the limit is too short for n_neighbors to be found."""
+    Retur (0,0,0) if the limit is too short for k_neighbors to be found."""
 
     trning_rss_matrix = trning_r_m.get_rss_matrix()
     trning_pos_matrix = trning_r_m.get_position_matrix()
@@ -54,15 +53,15 @@ def find_position_UC_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
                     ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 13*unmatch_coord[diff_sq_i]
 
     distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
-    if len(distances) < n_neighbors:
+    if len(distances) < k_neighbors:
         return np.array([0, 0, 0])
 
-    sorted_indices = np.argsort(distances)
-    average_position = np.mean(filtered_training_pos[sorted_indices[:n_neighbors]], axis=0)
+    sorted_indexes = np.argsort(distances)
+    average_position = np.mean(filtered_training_pos[sorted_indexes[:k_neighbors]], axis=0)
 
     return average_position
 
-def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit_rate: float) -> np.ndarray:
+def find_position_VT_method(k_neighbors: int, limit_rate: float, trning_r_m: RadioMap, trgt_fgpt: Fingerprint) -> np.ndarray:
     """ Run the KNN algorithm. Return the estimated position (x, y, z). 
     Return (0,0,0) if the limit can't be found.
     VT is for Variable Threshlod."""
@@ -83,57 +82,19 @@ def find_position_VT_method(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: F
                     ) | (target_rss == 100) & (trning_rss_matrix[diff_sq_i] != 100)] = 13*unmatch_coord[diff_sq_i]
 
     distances = np.sqrt(np.sum(filtered_diff_sq, axis=1))
-    if len(distances) < n_neighbors:
+    if len(distances) < k_neighbors:
         return np.array([0, 0, 0])
 
-    sorted_indices = np.argsort(distances)
-    average_position = np.mean(filtered_trning_pos_matrix[sorted_indices[:n_neighbors]], axis=0)
+    sorted_indexes = np.argsort(distances)
+    average_position = np.mean(filtered_trning_pos_matrix[sorted_indexes[:k_neighbors]], axis=0)
 
     return average_position
 
-def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="SC") -> np.ndarray:
-    global duration
-    match method:
-        case "SC":
-            start = time.time()
-            predicted_position = find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-            end = time.time()
-            duration = end - start
-        case "UC":
-            start = time.time()
-            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-            end = time.time()
-            duration = end - start
-        case "VT":
-            start = time.time()
-            predicted_position = find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-            end = time.time()
-            duration = end - start
-        case "SECU":
-            return find_position_error_secure(n_neighbors, trning_r_m, trgt_fgpt, limit, floor_height, "UC", "OF", 0)
-        case _:
-            print("Invalid method")
-            return np.inf
-    if (predicted_position == np.array([0,0,0])).all():
-        return np.inf
-    actual_position = trgt_fgpt.get_position().copy()
-    predicted_position[2] *= floor_height
-    actual_position[2] *= floor_height
-    return np.linalg.norm(predicted_position - actual_position)  
 
-def find_position_error_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="UC", filter_type:str = "OF", tolerance:float = 0) -> np.ndarray:
-    global duration
-    predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit, method, filter_type, tolerance)
-    if (predicted_position == np.array([0,0,0])).all():
-        return np.inf
-    actual_position = trgt_fgpt.get_position().copy()
-    predicted_position[2] *= floor_height
-    actual_position[2] *= floor_height
-    return np.linalg.norm(predicted_position - actual_position)  
-
-# Security
+### Security filters ###
 
 def secure_filter_overall_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray, tolerance: float) -> bool:
+    """ Return True if the fingerprint is valid, False otherwise."""
 
     aps_diameters, aps_centers = load_ap_max(trning_r_m)
     indexes_aps_to_check = np.where((target_rss != 100) & np.all(aps_centers != np.array([0, 0, 0]), axis=1))[0]
@@ -153,10 +114,10 @@ def secure_filter_overall_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray
                 failed_condition_counter += 1
                 if failed_condition_counter > failed_condition_tolerance:
                     return False
-
     return True
 
 def secure_filter_single_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray, tolerance: float) -> bool:
+    """ Return True if the fingerprint is valid, False otherwise."""
 
     aps_diameters, aps_centers = load_ap_max(trning_r_m)
     indexes_aps_to_check = np.where((target_rss != 100) & np.all(aps_centers != np.array([0, 0, 0]), axis=1))[0]
@@ -182,116 +143,51 @@ def secure_filter_single_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray,
 
     return True
 
-def find_position_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, method: str,filter_type: str, tolerance: float) -> np.ndarray:
-    """ Run the KNN algorithm. Return (0,0,0) if the fingerprint is corrupted"""
+
+### KNN Algorythm ###
+
+def find_position(k_neighbors: int, limit: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, method: str,filter_type: str = "", tolerance: float = 0.0) -> np.ndarray:
+    """ Run the KNN algorithm. Return the estimated position (x, y, z).
+    The method can be SC (Single Coordinate), UC (Unmatch Coordinate) or VT (Variable Threshold).
+    The filter_type can be OF (Overall Filter) or PF (Pair Filter) or something else to disable the security filter."""
 
     target_rss = trgt_fgpt.get_rss()
 
     match filter_type:
-        case "SF":
+        case "PF":
             valid_fingerprint = secure_filter_single_tolerance(trning_r_m, target_rss, tolerance)
         case "OF":
             valid_fingerprint = secure_filter_overall_tolerance(trning_r_m, target_rss, tolerance)
+        case _:
+            valid_fingerprint = True
 
     if valid_fingerprint:
         match method:
             case "SC":
-                return find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+                return find_position_SC_method(k_neighbors, limit, trning_r_m, trgt_fgpt)
             case "UC":
-                return find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+                return find_position_UC_method(k_neighbors, limit, trning_r_m, trgt_fgpt)
             case "VT":
-                return find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+                return find_position_VT_method(k_neighbors, limit, trning_r_m, trgt_fgpt)
     else:
         return np.array([0,0,0])
 
 
-## Section used to run by itself
+## Distance between predicted and actual position ##
 
-def run(trning_r_m: RadioMap, test_fgpt: Fingerprint, n_neighbors: int, gui=True, verbose=True, limit=0) -> tuple[np.ndarray, float]:
-    """ Run the KNN algorithm."""
-    if verbose:
-        print("Running KNN algorithm...")
-    predicted_position = find_position_SC_method(n_neighbors, trning_r_m, test_fgpt, limit)
-    actual_position = test_fgpt.get_position().copy()
-    floor_height = 3.0
+def find_position_error(k_neighbors: int, limit: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, method: str,filter_type: str = "", tolerance: float = 0.0, floor_height: float = 3.0) -> np.ndarray:
+    """ Run the KNN secure algorithm. Return the distance between the estimated position and the actual position.
+    Return None if the limit can't be found."""
+
+    global duration
+    predicted_position = find_position(k_neighbors, limit, trning_r_m, trgt_fgpt, method, filter_type, tolerance)
+    if (predicted_position == np.array([0,0,0])).all():
+        return None
+    actual_position = trgt_fgpt.get_position().copy()
     predicted_position[2] *= floor_height
     actual_position[2] *= floor_height
-    error_position = np.linalg.norm(
-        predicted_position - actual_position)
-    if verbose:
-        print("Predicted position: ", predicted_position)
-        print("Actual position: ", actual_position)
-        print("Distance: ", error_position)
-    if gui:
-        graph.plot_radio_map(
-            trning_r_m, title="Average location of the test point", new_figure=True)
-        graph.plot_point(predicted_position, args='ro', label="Predicted Position")
-        graph.plot_point(test_fgpt.get_position(), args='go', label='Real Position')
-        graph.show()
-    return (predicted_position, error_position)
+    return np.linalg.norm(predicted_position - actual_position)  
 
-def print_usage() -> None:
-    """ Print the usage of the script."""
-    print('Usage: python3 knn_algorithm.py -k <k_neigbors> -r <row> -l <limit> [--gui] [--verbose]') # noqa E501 pylint: disable=line-too-long
 
-def parse_cli_arguments(args: list[str]) -> tuple[int, int, bool, bool]:
-    """ Parse the CLI arguments."""
-    if '-k' in args:
-        try:
-            k_neighbors = int(args[args.index('-k') + 1])
-        except ValueError:
-            print_usage()
-            sys.exit(1)
-        args.pop(args.index('-k') + 1)
-        args.pop(args.index('-k'))
-    else:
-        print_usage()
-        sys.exit(1)
-    if '-r' in args:
-        row_from_validation_dataset = int(args[args.index('-r') + 1])
-        args.pop(args.index('-r') + 1)
-        args.pop(args.index('-r'))
-    else:
-        print_usage()
-        sys.exit(1)
-    if '-l' in args:
-        try:
-            limit = int(args[args.index('-l') + 1])
-        except ValueError:
-            print_usage()
-            sys.exit(1)
-        args.pop(args.index('-l') + 1)
-        args.pop(args.index('-l'))
-    else:
-        print_usage()
-        sys.exit(1)
-    if "--gui" in args:
-        gui = True
-        args.pop(args.index("--gui"))
-    else:
-        gui = False
-    if "--verbose" in args:
-        verbose = True
-        args.pop(args.index("--verbose"))
-    if len(args) >= 1:
-        print_usage()
-        sys.exit(1)
-    return k_neighbors, row_from_validation_dataset, gui, verbose, limit
 
-if __name__ == '__main__':
-    arg_list = sys.argv[1:]
-    cli_args = parse_cli_arguments(arg_list)
-
-    print("loading data...")
-    r_m = RadioMap()
-    r_m.load_from_csv('data/TrainingData.csv')
-
-    vld_r_m = RadioMap()
-    vld_r_m.load_from_csv('data/ValidationData.csv')
-    print("Done !")
-    
-    test_fgpt = vld_r_m.get_fingerprint(cli_args[1])
-
-    run(r_m, test_fgpt, cli_args[0], cli_args[2], cli_args[3], cli_args[4])
-    run(r_m, test_fgpt, cli_args[0], cli_args[2], cli_args[3], cli_args[4])
 
