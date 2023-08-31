@@ -29,7 +29,7 @@ def load_blacklist(trning_r_m) -> list[list]:
                 aps_blacklist.append(ap_blacklist)
         return aps_blacklist
 
-def load_ap_max(trning_r_m: RadioMap) -> list[int]:
+def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
     """ Load the ap_max from the file or generate it """
     if not os.path.isfile("metadata/ap_max_dist.txt"):
         with open("metadata/ap_max_dist.txt", "w") as file:
@@ -61,11 +61,12 @@ def load_ap_max(trning_r_m: RadioMap) -> list[int]:
             for max_dist, center_point in ap_max_data:
                 data_lines.append(f"{max_dist},{center_point[0]},{center_point[1]},{center_point[2]}")
             file.write("\n".join(data_lines))
-            return ap_max_data
+            return np.array([max_dist for max_dist, _ in ap_max_data]), np.array([center_point for _, center_point in ap_max_data])
     else:
         with open("metadata/ap_max_dist.txt", "r") as file:
-            ap_max = []
+            aps_max_diameters, aps_center_points = [], []
             for line in file:
                 max_dist, x, y, z = line.strip().split(",")
-                ap_max.append((float(max_dist), np.array([float(x), float(y), float(z)])))
-        return ap_max
+                aps_max_diameters.append(float(max_dist))
+                aps_center_points.append(np.array([float(x), float(y), float(z)]))
+        return np.array(aps_max_diameters), np.array(aps_center_points)

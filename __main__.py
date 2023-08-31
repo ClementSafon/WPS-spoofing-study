@@ -256,7 +256,7 @@ def simu02_overall():
     """ find the performance for each methods. """
 
     methods = ["SC", "UC", "VT", "SECU"]
-    k_l_values = [(11,7), (7,16), (11,0.64), (7,16)]
+    k_l_values = [(8,5), (3,15), (11,0.64), (3,15)]
 
     data = [["method", "(k,l)", "mean_error", "std_error", "max_error", "min_error", "median_error", "failed", "time_to_compute_one_position"]]
 
@@ -399,6 +399,44 @@ def simu12_scenario2_VT_method():
 #############################################################################################################
 
 # Security tests
+
+# No filter
+def simu20_single_test():
+    """ find the error for a k, and limit combination."""    
+
+    k = 4
+    limit = 0.6
+
+    n_fake_aps = 8
+    scenario = "scenario2"
+
+    vld_X_r_m = RadioMap()
+    vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(n_fake_aps) + '.csv')
+
+
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_X_r_m)):
+        print(round((fgpt_id / len(vld_X_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_X_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit, method="VT")
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_X_r_m), " -> ", round(failed*100 / len(vld_X_r_m),2))
+
+
+# Overall filter
 def simu2X_scenarioX_XX_method(k: int, limit: float, scenario: str, method: str, find: callable):
     data = [["FILE", "ATTACK_SUCCESSFUL", "ATTACK_FAILED", "POSITIONING_FAIL", "NORMAL_POSITIONING_FAIL", "MEAN_ERROR_NORMAL_RSS", "MEAN_ERROR_ACTUAL_POSITION", "TOTAL_OF_ATTACK"]]
 
@@ -467,7 +505,7 @@ def simu21_scenario2_UC_method_secu():
 
     simu2X_scenarioX_XX_method(k, limit, scenario, method, find)
 
-def simu22_UC_method_secu():
+def simu22_false_positive():
     """ find the error for a k, and limit combination."""    
 
     k = 7
@@ -477,7 +515,7 @@ def simu22_UC_method_secu():
     failed = 0
     for fgpt_id in range(len(vld_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
-        error = knn.find_position_error(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="SECU")
+        error = knn.find_position_error_secure(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="UC", tolerance=0.25)
         if error != np.inf:
             errors.append(error)
         else:
@@ -493,6 +531,103 @@ def simu22_UC_method_secu():
     (median error) {np.median(errors)}
     """)
     print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+
+def simu22_single_test():
+    """ find the error for a k, and limit combination."""    
+
+    k = 7
+    limit = 16
+
+    n_fake_aps = 8
+    scenario = "scenario2"
+
+    vld_X_r_m = RadioMap()
+    vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(n_fake_aps) + '.csv')
+
+
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_X_r_m)):
+        print(round((fgpt_id / len(vld_X_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_X_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error_secure(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit, method="UC", filter_type="OF", tolerance=0.25)
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_X_r_m), " -> ", round(failed*100 / len(vld_X_r_m),2))
+
+
+# Precise filter
+def simu23_false_positive():
+    """ find the error for a k, and limit combination."""    
+
+    k = 7
+    limit = 16
+
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error_secure(k, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), limit, method="UC", filter_type="SF", tolerance=0.25)
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_r_m), " -> ", round(failed*100 / len(vld_r_m),2))
+
+def simu23_single_test():
+    """ find the error for a k, and limit combination."""    
+
+    k = 7
+    limit = 16
+
+    n_fake_aps = 8
+    scenario = "scenario2"
+
+    vld_X_r_m = RadioMap()
+    vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(n_fake_aps) + '.csv')
+
+
+    errors = []
+    failed = 0
+    for fgpt_id in range(len(vld_X_r_m)):
+        print(round((fgpt_id / len(vld_X_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_X_r_m)) * 100,1)))) + "%", end="\r")
+        error = knn.find_position_error_secure(k, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), limit, method="UC", filter_type="SF", tolerance=0.25)
+        if error != np.inf:
+            errors.append(error)
+        else:
+            failed += 1
+    
+    print(f"""
+    K={k}
+    LIMIT={limit}
+    (mean error) {np.mean(errors)}
+    (std error) {np.std(errors)}
+    (max error) {np.max(errors)}
+    (min error) {np.min(errors)}
+    (median error) {np.median(errors)}
+    """)
+    print("Failed: ", failed, "/", len(vld_X_r_m), " -> ", round(failed*100 / len(vld_X_r_m),2))
 
 
 ##############################################################################################################
@@ -589,16 +724,16 @@ if __name__ == '__main__':
     vld_r_m.load_from_csv('datasets/ValidationData.csv')
     print("Done !")
 
-    simu01_shared_coord_method()
-    simu01_unshared_coord_method()
-    simu01_variable_threshold_method()
+    # simu01_shared_coord_method()
+    # simu01_unshared_coord_method()
+    # simu01_variable_threshold_method()
 
     ##############################
 
     # simu02_shared_coord_method()
     # simu02_unshared_coord_method()
     # simu02_variable_threshold_method()
-    # simu02_overall()
+    simu02_overall()
 
     ##############################
 
@@ -615,10 +750,18 @@ if __name__ == '__main__':
     ##############################
     
     # Security tests
+
+    # No filter
+    # simu20_single_test()
+
     # simu21_scenario1_UC_method_secu()
     # simu21_scenario2_UC_method_secu()
 
-    # simu22_UC_method_secu()
+    # simu22_false_positive()
+    # simu22_single_test()
+    
+    # simu23_false_positive()
+    # simu23_single_test()
 
     # display_AP_fingerprints(243)
 

@@ -269,7 +269,7 @@ if __name__ == '__main__':
     # analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
     # analyse_K_L_eval("results/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
     # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.05_0.1_.csv")
-    # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
+    analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
 
 
     basic_files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method_K11_L7_.csv",
@@ -292,6 +292,6 @@ if __name__ == '__main__':
 
     # analyse_attack_scenarios("method", all_files)
 
-    algorythme_comparison()
+    # algorythme_comparison()
 
     plt.show()

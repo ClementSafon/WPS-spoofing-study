@@ -110,15 +110,7 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
             end = time.time()
             duration = end - start
         case "SECU":
-            start = time.time()
-            predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit)
-            end = time.time()
-            duration = end - start
-        # case "OTHER":
-        #     start = time.time()
-        #     predicted_position = find_position_other_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        #     end = time.time()
-        #     duration = end - start
+            return find_position_error_secure(n_neighbors, trning_r_m, trgt_fgpt, limit, floor_height, "UC", "OF", 0)
         case _:
             print("Invalid method")
             return np.inf
@@ -129,47 +121,86 @@ def find_position_error(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Finge
     actual_position[2] *= floor_height
     return np.linalg.norm(predicted_position - actual_position)  
 
-def find_position_error_article(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, method="SC") -> np.ndarray:
-    match method:
-        case "SC":
-            predicted_position = find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case "UC":
-            predicted_position = find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
-        case _:
-            print("Invalid method")
-            return np.inf
+def find_position_error_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, floor_height = 3.0, method="UC", filter_type:str = "OF", tolerance:float = 0) -> np.ndarray:
+    global duration
+    predicted_position = find_position_secure(n_neighbors, trning_r_m, trgt_fgpt, limit, method, filter_type, tolerance)
     if (predicted_position == np.array([0,0,0])).all():
         return np.inf
     actual_position = trgt_fgpt.get_position().copy()
-    if int(actual_position[2]) != int(predicted_position[2]):
-        return np.inf
-    return np.linalg.norm(predicted_position[:2] - actual_position[:2])
+    predicted_position[2] *= floor_height
+    actual_position[2] *= floor_height
+    return np.linalg.norm(predicted_position - actual_position)  
 
 # Security
 
-def find_position_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int) -> np.ndarray:
-    """ Run the KNN secure algorithm."""
+def secure_filter_overall_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray, tolerance: float) -> bool:
 
-    trning_pos_matrix = trning_r_m.get_position_matrix()
+    aps_diameters, aps_centers = load_ap_max(trning_r_m)
+    indexes_aps_to_check = np.where((target_rss != 100) & np.all(aps_centers != np.array([0, 0, 0]), axis=1))[0]
+
+    n_ap = len(indexes_aps_to_check)
+
+    failed_condition_tolerance = tolerance*((n_ap-1)*n_ap)/2
+    failed_condition_counter = 0
+
+    for i in range(len(indexes_aps_to_check)):
+        for j in range(i+1, len(indexes_aps_to_check)):
+            i_center = aps_centers[indexes_aps_to_check[i]]
+            j_center = aps_centers[indexes_aps_to_check[j]]
+            i_radius = aps_diameters[indexes_aps_to_check[i]]/2
+            j_radius = aps_diameters[indexes_aps_to_check[j]]/2
+            if np.linalg.norm(i_center - j_center) > i_radius + j_radius:
+                failed_condition_counter += 1
+                if failed_condition_counter > failed_condition_tolerance:
+                    return False
+
+    return True
+
+def secure_filter_single_tolerance(trning_r_m: RadioMap, target_rss: np.ndarray, tolerance: float) -> bool:
+
+    aps_diameters, aps_centers = load_ap_max(trning_r_m)
+    indexes_aps_to_check = np.where((target_rss != 100) & np.all(aps_centers != np.array([0, 0, 0]), axis=1))[0]
+
+    n_ap = len(indexes_aps_to_check)
+
+    failed_condition_tolerance = tolerance*(n_ap-1)
+    failed_counter_matrix = np.zeros((n_ap, n_ap))
+
+    for i in range(len(indexes_aps_to_check)):
+        for j in range(i+1, len(indexes_aps_to_check)):
+            i_center = aps_centers[indexes_aps_to_check[i]]
+            j_center = aps_centers[indexes_aps_to_check[j]]
+            i_radius = aps_diameters[indexes_aps_to_check[i]]/2
+            j_radius = aps_diameters[indexes_aps_to_check[j]]/2
+            if np.linalg.norm(i_center - j_center) > i_radius + j_radius:
+                failed_counter_matrix[i][j] += 1
+                failed_counter_matrix[j][i] += 1
+
+    for i in range(n_ap):
+        if np.sum(failed_counter_matrix[i]) > failed_condition_tolerance:
+            return False
+
+    return True
+
+def find_position_secure(n_neighbors: int, trning_r_m: RadioMap, trgt_fgpt: Fingerprint, limit: int, method: str,filter_type: str, tolerance: float) -> np.ndarray:
+    """ Run the KNN algorithm. Return (0,0,0) if the fingerprint is corrupted"""
+
     target_rss = trgt_fgpt.get_rss()
 
-    valid_fingerprint = True
-
-    aps_max = load_ap_max(trning_r_m)
-    for rssi_index, rssi in enumerate(target_rss):
-        if rssi != 100:
-            for rssi_index_comp, rssi_comp in enumerate(target_rss):
-                if rssi_comp != 100:
-                    max_dist = max(aps_max[rssi_index][0]/2 + aps_max[rssi_index_comp][0]/2, 60)
-                    center_point = aps_max[rssi_index][1]
-                    center_point_comp = aps_max[rssi_index_comp][1]
-                    if (center_point != np.array([0,0,0])).all() and (center_point_comp != np.array([0,0,0])).all():
-                        if np.linalg.norm(center_point - center_point_comp) > max_dist:
-                            valid_fingerprint = False
-                            break
+    match filter_type:
+        case "SF":
+            valid_fingerprint = secure_filter_single_tolerance(trning_r_m, target_rss, tolerance)
+        case "OF":
+            valid_fingerprint = secure_filter_overall_tolerance(trning_r_m, target_rss, tolerance)
 
     if valid_fingerprint:
-        return find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+        match method:
+            case "SC":
+                return find_position_SC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            case "UC":
+                return find_position_UC_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
+            case "VT":
+                return find_position_VT_method(n_neighbors, trning_r_m, trgt_fgpt, limit)
     else:
         return np.array([0,0,0])
 
