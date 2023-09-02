@@ -263,15 +263,15 @@ if __name__ == '__main__':
     # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
 
 
-    basic_files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method_K11_L7_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method_K11_L7_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_VT_method_K4_L0.6_.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_VT_method_K4_L0.6_.csv",]
+    basic_files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_UC_method.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario1_using_VT_method.csv",
+             "results/basic_knn_on_corrupted_dataset_scenario2_using_VT_method.csv",]
     
-    secure_files = ["results/secure_knn_on_corrupted_dataset_scenario1_using_UC_method_K7_L16_.csv",
-                    "results/secure_knn_on_corrupted_dataset_scenario2_using_UC_method_K7_L16_.csv"]
+    secure_files = ["results/secure_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
+                    "results/secure_knn_on_corrupted_dataset_scenario2_using_UC_method.csv"]
     
     all_files = basic_files + secure_files
 
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     # analyse_attack_scenarios("method", secure_files)   
     # analyse_attack_scenarios("scenario", secure_files)
 
-    # analyse_attack_scenarios("method", all_files)
+    analyse_attack_scenarios("method", all_files)
 
     # algorythme_comparison()
 

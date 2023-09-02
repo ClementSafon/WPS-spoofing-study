@@ -805,7 +805,7 @@ if __name__ == '__main__':
 
     # Overall filter : SIMU 21
     # simu21_scenario1_UC_method_secu()
-    # simu21_scenario2_UC_method_secu()
+    simu21_scenario2_UC_method_secu()
 
     # Precise filter : SIMU 22
     # simu22_scenario1_UC_method_secu()
