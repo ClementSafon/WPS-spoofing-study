@@ -159,23 +159,24 @@ def plot_scenario(files: list[str], parameter="success"):
         success_rates.append(success_rates_file)
         mean_errors_normal.append(mean_errors_normal_file)
         mean_errors_actual.append(mean_errors_actual_file)
+    labels = []
+    for i in range(len(files)):
+        labels.append(" ".join([files[i].split("/")[2].split("_")[0]] + files[i].split("_")[8:]))
+    title = files[i].split("_")[6]
     if parameter == "success":
         for i in range(len(files)):
-            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
-            plt.plot(success_rates[i], label=label)
-        plt.title(files[i].split("_")[5] + " : Attack Success Rate")
+            plt.plot(success_rates[i], label=labels[i])
+        plt.title(title + " : Attack Success Rate")
         plt.ylabel("Success Rate")
     elif parameter == "error_normal":
         for i in range(len(files)):
-            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
-            plt.plot(mean_errors_normal[i], label=label)
-        plt.title(files[i].split("_")[5] + " : Mean Error Normal")
+            plt.plot(mean_errors_normal[i], label=labels[i])
+        plt.title(title + " : Mean Error Normal")
         plt.ylabel("Mean Error")
     elif parameter == "error_actual":
         for i in range(len(files)):
-            label = " ".join([files[i].split("_")[0].split("/")[1]] + files[i].split("_")[7:9])
-            plt.plot(mean_errors_actual[i], label=label)
-        plt.title(files[i].split("_")[5] + " : Mean Error Actual")
+            plt.plot(mean_errors_actual[i], label=labels[i])
+        plt.title(title + " : Mean Error Actual")
         plt.ylabel("Mean Error Actual")
     plt.xlabel("Number of fake APs")
     plt.legend()
@@ -201,20 +202,24 @@ def plot_method(files: list[str], parameter="success"):
         success_rates.append(success_rates_file)
         mean_errors_normal.append(mean_errors_normal_file)
         mean_errors_actual.append(mean_errors_actual_file)
+    title = " ".join(files[0].split("_")[8:])
+    labels = []
+    for i in range(len(files)):
+        labels.append(" ".join(files[i].split("_")[6:7]))
     if parameter == "success":
         for i in range(len(files)):
-            plt.plot(success_rates[i], label=" ".join(files[i].split("_")[5:6]))
-        plt.title("Attack Success Rate "+ " ".join(files[0].split("_")[7:9]))
+            plt.plot(success_rates[i], label=labels[i])
+        plt.title("Attack Success Rate "+ title)
         plt.ylabel("Success Rate")
     elif parameter == "error_normal":
         for i in range(len(files)):
-            plt.plot(mean_errors_normal[i], label=" ".join(files[i].split("_")[5:6]))
-        plt.title("Mean Error"+ " ".join(files[0].split("_")[7:9]))
+            plt.plot(mean_errors_normal[i], label=labels[i])
+        plt.title("Mean Error"+ title)
         plt.ylabel("Mean Error")
     elif parameter == "error_actual":
         for i in range(len(files)):
-            plt.plot(mean_errors_actual[i], label=" ".join(files[i].split("_")[5:6]))
-        plt.title("Mean Error Actual"+ " ".join(files[0].split("_")[7:9]))
+            plt.plot(mean_errors_actual[i], label=labels[i])
+        plt.title("Mean Error Actual"+ title)
         plt.ylabel("Mean Error Actual")
     plt.xlabel("Number of fake APs")
     plt.legend()
@@ -263,15 +268,15 @@ if __name__ == '__main__':
     # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
 
 
-    basic_files = ["results/basic_knn_on_corrupted_dataset_scenario1_using_SC_method.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_SC_method.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_UC_method.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario1_using_VT_method.csv",
-             "results/basic_knn_on_corrupted_dataset_scenario2_using_VT_method.csv",]
+    basic_files = ["results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario1_using_SC_method.csv",
+             "results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario2_using_SC_method.csv",
+             "results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
+             "results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario2_using_UC_method.csv",
+             "results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario1_using_VT_method.csv",
+             "results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario2_using_VT_method.csv",]
     
-    secure_files = ["results/secure_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
-                    "results/secure_knn_on_corrupted_dataset_scenario2_using_UC_method.csv"]
+    secure_files = ["results/corrupted_datasets/secure_knn_on_corrupted_dataset_scenario1_using_UC_method.csv",
+                    "results/corrupted_datasets/secure_knn_on_corrupted_dataset_scenario2_using_UC_method.csv"]
     
     all_files = basic_files + secure_files
 
