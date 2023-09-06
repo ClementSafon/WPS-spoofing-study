@@ -6,6 +6,7 @@ import csv
 from radio_map import RadioMap
 import knn_algorithm as knn
 from matplotlib import pyplot as plt
+from tools.metadata_gen import load_ap_max
 
 ### Simulations ###
 
@@ -741,7 +742,17 @@ def display_AP_fingerprints(id_AP: int):
 
 def tmp():
     """ Temporary function to try things. """
-    ###
+    fgpt_id = 147
+
+    fgpt = vld_r_m.get_fingerprint(fgpt_id)
+    max_dist, centers = load_ap_max(trning_r_m)
+    graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3)
+    for i, rss in enumerate(fgpt.get_rss()):
+        if rss != 100:
+            plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+    plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+
+    plt.show()
     return
     
 
@@ -805,7 +816,7 @@ if __name__ == '__main__':
 
     # Overall filter : SIMU 21
     # simu21_scenario1_UC_method_secu()
-    simu21_scenario2_UC_method_secu()
+    # simu21_scenario2_UC_method_secu()
 
     # Precise filter : SIMU 22
     # simu22_scenario1_UC_method_secu()
