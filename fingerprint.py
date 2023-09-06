@@ -40,6 +40,21 @@ class Fingerprint():
     
     def get_timestamp(self) -> int:
         return self.timestamp
+
+    def get_phone_id(self) -> int:
+        return self.phone_id
+    
+    def get_relative_position(self) -> int:
+        return self.relative_position
+    
+    def get_user_id(self) -> int:
+        return self.user_id
+    
+    def get_space_id(self) -> int:
+        return self.space_id
+    
+    def get_building_id(self) -> int:
+        return self.building_id
     
     def fork(self) -> "Fingerprint":
         csv_row = {
@@ -55,6 +70,10 @@ class Fingerprint():
             **{"WAP" + "0" * (3 - len(str(index))) + str(index): rssi for index, rssi in enumerate(self.rss)}
         }
         return Fingerprint(self.id, csv_row)
+    
+    def update_rss(self, rss: np.ndarray) -> None:
+        """ Update the RSS vector."""
+        self.rss = rss
     
         
         

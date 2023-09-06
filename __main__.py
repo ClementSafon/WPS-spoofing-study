@@ -742,15 +742,32 @@ def display_AP_fingerprints(id_AP: int):
 
 def tmp():
     """ Temporary function to try things. """
-    fgpt_id = 147
+    fgpt_ids = [100, 185, 278, 584]
+    scenario = "scenario2"
+    file_index = 8
 
-    fgpt = vld_r_m.get_fingerprint(fgpt_id)
-    max_dist, centers = load_ap_max(trning_r_m)
-    graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3)
-    for i, rss in enumerate(fgpt.get_rss()):
-        if rss != 100:
-            plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
-    plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+    vld_X_r_m = RadioMap()
+    vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(file_index) + '.csv')
+
+    for fgpt_id in fgpt_ids:
+        fgpt = vld_r_m.get_fingerprint(fgpt_id)
+        max_dist, centers = load_ap_max(trning_r_m)
+        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Valid fingerprint : " + str(fgpt_id))
+        for i, rss in enumerate(fgpt.get_rss()):
+            if rss != 100:
+                if centers[i,0] != 0:
+                    plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+        plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+
+    for fgpt_id in fgpt_ids:
+        fgpt = vld_X_r_m.get_fingerprint(fgpt_id)
+        max_dist, centers = load_ap_max(trning_r_m)
+        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Valid fingerprint : " + str(fgpt_id))
+        for i, rss in enumerate(fgpt.get_rss()):
+            if rss != 100:
+                if centers[i,0] != 0:
+                    plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+        plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
 
     plt.show()
     return
@@ -801,9 +818,9 @@ if __name__ == '__main__':
     # simu11_scenario1_VT_method()
 
     ## scenario2
-    # simu12_scenario2_SC_method()
-    # simu12_scenario2_UC_method()
-    # simu12_scenario2_VT_method()
+    simu12_scenario2_SC_method()
+    simu12_scenario2_UC_method()
+    simu12_scenario2_VT_method()
 
     ##############################
     
@@ -816,7 +833,7 @@ if __name__ == '__main__':
 
     # Overall filter : SIMU 21
     # simu21_scenario1_UC_method_secu()
-    # simu21_scenario2_UC_method_secu()
+    simu21_scenario2_UC_method_secu()
 
     # Precise filter : SIMU 22
     # simu22_scenario1_UC_method_secu()
@@ -835,6 +852,6 @@ if __name__ == '__main__':
     # Other simulations
 
     # display_AP_fingerprints(147)
-    tmp()
+    # tmp()
 
     print("Executed in ", time.time() - td, " seconds")
