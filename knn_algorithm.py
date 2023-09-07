@@ -1,7 +1,7 @@
 """ KNN algorithm for indoor localization based on WAP fingerprints"""
 import numpy as np
 from radio_map import RadioMap
-from tools.metadata_gen import load_ap_max
+from metadata_gen import load_ap_max
 from fingerprint import Fingerprint
 
 duration = 0

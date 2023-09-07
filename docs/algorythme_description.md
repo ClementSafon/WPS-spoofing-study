@@ -273,3 +273,15 @@ FUNCTION find_position_SC_method(k, trning_r_m, trgt_fgpt, limit):
 
 END FUNCTION
 ```
+
+# KNN - Secure - How to detect an attack
+
+In this part I will explain a way to detect an spoofing attack. The idea of the attack is to send fake beacons as if they were sent by Access Point that are not supposed to be here (where the user is). So the determination of the position could be less precise, or even, could be forced to give to the user an other position wanted by the attacker.
+
+The first way to try to counter thoses attacks is to try to detect them. To do so, we can make a filter for the user fingerprint, in order to exclude the corrupted ones. The idea is to check which AP are detectd on the fingerprint, and try to detect if there are some AP that are not supposed to be here because they supposed to be too far from other AP that are detected.
+
+First we have to generate some metadata from the training dataset. For each AP in the Training Dataset, we will take the average weighted position of the fingerprints, and the max distances between the fingerprints.
+
+Base on those metadata, we can have a map with circles for every AP. Finally, to detect an attack, we can check if every AP detected in the user fingerprint share a common area on the map. If not, we can consider that there is an attack.
+
+To go a little bit futher, we can set threashold to allow some circle to not share the same area. We can do that with two threshold for example, a global one, and a local one. The global one will count the number of AP that are not sharing a common area 2 by 2, and the local one will count the number of AP that are not sharing the same area for each AP. It the same way of counting but not the same way of fitering. In the first case the threshold is global and in the second case we submit the treshold for each AP.

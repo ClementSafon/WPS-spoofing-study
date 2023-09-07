@@ -6,7 +6,7 @@ import csv
 from radio_map import RadioMap
 import knn_algorithm as knn
 from matplotlib import pyplot as plt
-from tools.metadata_gen import load_ap_max
+from metadata_gen import load_ap_max
 
 ### Simulations ###
 
@@ -742,7 +742,7 @@ def display_AP_fingerprints(id_AP: int):
 
 def tmp():
     """ Temporary function to try things. """
-    fgpt_ids = [100, 185, 278, 584]
+    fgpt_ids = [745,144,10,268]
     scenario = "scenario2"
     file_index = 8
 
@@ -818,9 +818,9 @@ if __name__ == '__main__':
     # simu11_scenario1_VT_method()
 
     ## scenario2
-    simu12_scenario2_SC_method()
-    simu12_scenario2_UC_method()
-    simu12_scenario2_VT_method()
+    # simu12_scenario2_SC_method()
+    # simu12_scenario2_UC_method()
+    # simu12_scenario2_VT_method()
 
     ##############################
     
@@ -832,7 +832,7 @@ if __name__ == '__main__':
     ## Scenario 1/2
 
     # Overall filter : SIMU 21
-    # simu21_scenario1_UC_method_secu()
+    simu21_scenario1_UC_method_secu()
     simu21_scenario2_UC_method_secu()
 
     # Precise filter : SIMU 22

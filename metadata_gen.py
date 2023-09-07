@@ -45,15 +45,17 @@ def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
                 #find max norm and center point
                 max_ap_distance = 0
                 positions = []
+                rss_weights = []
                 for i in range(len(valid_fingerprint_indexes)):
                     for j in range(i + 1, len(valid_fingerprint_indexes)):
                         distance = np.linalg.norm(trning_pos_matrix[valid_fingerprint_indexes[i]] - trning_pos_matrix[valid_fingerprint_indexes[j]])
                         max_ap_distance = max(max_ap_distance, distance)
                     positions.append(trning_pos_matrix[valid_fingerprint_indexes[i]])
+                    rss_weights.append(1.0 / np.abs(ap_rssi_values[valid_fingerprint_indexes[i]]))
                 if len(positions) == 0:
                     center_point = np.array([0, 0, 0])
                 else:
-                    center_point = np.mean(positions, axis=0)
+                    center_point = np.average(positions, axis=0, weights=rss_weights)
                 
                 ap_max_data.append((max_ap_distance, center_point))
                 print(f"Max distance for AP {ap_index} is {max_ap_distance} centered at {center_point}")
