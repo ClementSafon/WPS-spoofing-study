@@ -334,7 +334,7 @@ def simu1X_scenarioX_XX_method(scenario: str, method: str):
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             predicted_position = knn.find_position(k, limit, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), method)
             normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method)
-            actual_position = vld_X_r_m.get_position(fgpt_id)
+            actual_position = vld_X_r_m.get_fingerprint(fgpt_id).get_position()
             null_pred_pos = (predicted_position == [0,0,0]).all()
             null_norm_pos = (normal_predicted_position == [0,0,0]).all()
 
@@ -344,7 +344,7 @@ def simu1X_scenarioX_XX_method(scenario: str, method: str):
                 positioning_failed += 1
                 n_attack_failed += 1
             else:
-                if (predicted_position != normal_predicted_position).all():
+                if (predicted_position != normal_predicted_position).any():
                     n_attack_successfull += 1
                     if not null_norm_pos and not null_pred_pos:
                         distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
@@ -475,7 +475,7 @@ def simu2X_scenarioX_XX_method(scenario: str, method: str, filter_type: str, tol
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             predicted_position = knn.find_position(k, limit, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
             normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
-            actual_position = vld_X_r_m.get_position(fgpt_id)
+            actual_position = vld_X_r_m.get_fingerprint(fgpt_id).get_position()
             null_pred_pos = (predicted_position == [0,0,0]).all()
             null_norm_pos = (normal_predicted_position == [0,0,0]).all()
 
@@ -486,7 +486,7 @@ def simu2X_scenarioX_XX_method(scenario: str, method: str, filter_type: str, tol
                 positioning_failed += 1
                 n_attack_failed += 1
             else:
-                if (predicted_position != normal_predicted_position).all():
+                if (predicted_position != normal_predicted_position).any():
                     n_attack_successfull += 1
                     if not null_norm_pos and not null_pred_pos:
                         distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
@@ -622,8 +622,8 @@ def simu24_single_test_OF():
     method = "UC"
     filter_type = "OF"
     tolerance = 0
-    n_fake_aps = 8
-    scenario = "scenario2"
+    n_fake_aps = 4
+    scenario = "scenario1"
 
     k = k_l_values[method][0]
     limit = k_l_values[method][1]
@@ -637,7 +637,8 @@ def simu24_single_test_OF():
     for fgpt_id in range(len(vld_X_r_m)):
         print(round((fgpt_id / len(vld_X_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_X_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, limit, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
-        if error != None:
+        normal_error = knn.find_position_error(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
+        if error != None and (np.round(error, 3) != np.round(normal_error, 3)).any():
             errors.append(error)
         else:
             failed += 1
@@ -652,6 +653,8 @@ def simu24_single_test_OF():
     (median error) {np.median(errors)}
     """)
     print("Failed: ", failed, "/", len(vld_X_r_m), " -> ", round(failed*100 / len(vld_X_r_m),2))
+
+    print(errors[:10])
 
 def simu23_single_test_PF():
     """ find the error for a k, and limit combination."""    
@@ -740,7 +743,7 @@ def display_AP_fingerprints(id_AP: int):
 
     plt.show()
 
-def tmp():
+def visualize_ap_centers():
     """ Temporary function to try things. """
     fgpt_ids = [745,144,10,268]
     scenario = "scenario2"
@@ -771,7 +774,65 @@ def tmp():
 
     plt.show()
     return
+
+def tmp():
+
+    scenario = "scenario1"
+    file_index = 4
+    method = "UC"
+    filter_type = "OF"
+    tolerance = 0
+
+    k = k_l_values[method][0]
+    limit = k_l_values[method][1]
+
+    vld_X_r_m = RadioMap()
+    vld_X_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(file_index) + '.csv')
+
+    n_attack_successfull = 0
+    n_attack_failed = 0
+    positioning_failed = 0
+    normal_positioning_failed = 0
+    distance_error_normal_rss = []
+    distance_error_actual_position = []
+    total_of_attack = 0
+    print('ValidationData_' + str(file_index) + '.csv')
+    for fgpt_id in range(len(vld_X_r_m)):
+        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+        fgpt = vld_X_r_m.get_fingerprint(fgpt_id)
+        predicted_position = knn.find_position(k, limit, trning_r_m, fgpt, method, filter_type, tolerance)
+        normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
+        actual_position = fgpt.get_position()
+        null_pred_pos = (predicted_position == [0,0,0]).all()
+        null_norm_pos = (normal_predicted_position == [0,0,0]).all()
+
+        
+        if null_norm_pos:
+            normal_positioning_failed += 1
+        if null_pred_pos:
+            positioning_failed += 1
+            n_attack_failed += 1
+        else:
+            if (predicted_position != normal_predicted_position).any():
+                n_attack_successfull += 1
+                if not null_norm_pos and not null_pred_pos:
+                    predicted_position[2] *= 3
+                    normal_predicted_position[2] *= 3
+                    actual_position[2] *= 3
+                    distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
+                    distance_error_actual_position.append(np.linalg.norm(predicted_position - actual_position))
+                    print(np.linalg.norm(actual_position - normal_predicted_position), np.linalg.norm(predicted_position - actual_position))
+            else:
+                # print("#", np.linalg.norm(actual_position - normal_predicted_position), np.linalg.norm(predicted_position - actual_position))
+                n_attack_failed += 1
+            # print(predicted_position, normal_predicted_position, (predicted_position != normal_predicted_position).any())
+                
+
+        total_of_attack = len(vld_X_r_m)
     
+    print(distance_error_actual_position[:10])
+                    
+    print(["ValidationData_" + str(file_index) + '.csv', n_attack_successfull, n_attack_failed, positioning_failed, normal_positioning_failed, np.mean(distance_error_normal_rss), np.mean(distance_error_actual_position), total_of_attack])
 
 ##############################################################################################################
 
@@ -813,14 +874,14 @@ if __name__ == '__main__':
     ## Test Basic KNN-Algo on Corrupted Data : SIMU 1X
 
     ## scenario1
-    # simu11_scenario1_SC_method()
-    # simu11_scenario1_UC_method()
-    # simu11_scenario1_VT_method()
+    simu11_scenario1_SC_method()
+    simu11_scenario1_UC_method()
+    simu11_scenario1_VT_method()
 
     ## scenario2
-    # simu12_scenario2_SC_method()
-    # simu12_scenario2_UC_method()
-    # simu12_scenario2_VT_method()
+    simu12_scenario2_SC_method()
+    simu12_scenario2_UC_method()
+    simu12_scenario2_VT_method()
 
     ##############################
     
@@ -852,6 +913,9 @@ if __name__ == '__main__':
     # Other simulations
 
     # display_AP_fingerprints(147)
+
+    # visualize_ap_centers()
+
     # tmp()
 
     print("Executed in ", time.time() - td, " seconds")
