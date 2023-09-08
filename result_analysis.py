@@ -71,13 +71,13 @@ def analyse_K_L_eval(file: str):
     # plt.show()
 
 def algorythme_comparison():
-    file = "results/K_L_overall_performance_evaluations.csv"
+    file = "results/All_Methods_Performances_Evaluation.csv"
     with open(file, "r") as f:
         reader = csv.reader(f)
         data = np.array(list(reader))
 
     method_names = data[1:, 0]
-    characteristics = ['Mean', 'Standard Deviation', 'Median', 'Fail Rate', 'Duration']
+    characteristics = ['Mean', 'Standard Deviation', 'Median', 'Fail Rate (%)', 'Duration (ms)']
     values = data[1:, [2, 3, 6, 7, 8]].astype(float).round(2)
 
     x = np.arange(len(characteristics))  # X coordinates for the bars
@@ -163,19 +163,20 @@ def plot_scenario(files: list[str], parameter="success"):
     for i in range(len(files)):
         labels.append(" ".join([files[i].split("/")[2].split("_")[0]] + files[i].split("_")[8:]))
     title = files[i].split("_")[6]
+    x = [i for i in range(1, 11)]
     if parameter == "success":
         for i in range(len(files)):
-            plt.plot(success_rates[i], label=labels[i])
+            plt.plot(x, success_rates[i], label=labels[i])
         plt.title(title + " : Attack Success Rate")
         plt.ylabel("Success Rate")
     elif parameter == "error_normal":
         for i in range(len(files)):
-            plt.plot(mean_errors_normal[i], label=labels[i])
+            plt.plot(x, mean_errors_normal[i], label=labels[i])
         plt.title(title + " : Mean Error Normal")
         plt.ylabel("Mean Error")
     elif parameter == "error_actual":
         for i in range(len(files)):
-            plt.plot(mean_errors_actual[i], label=labels[i])
+            plt.plot(x, mean_errors_actual[i], label=labels[i])
         plt.title(title + " : Mean Error Actual")
         plt.ylabel("Mean Error Actual")
     plt.xlabel("Number of fake APs")
@@ -206,19 +207,20 @@ def plot_method(files: list[str], parameter="success"):
     labels = []
     for i in range(len(files)):
         labels.append(" ".join(files[i].split("_")[6:7]))
+    x = [i for i in range(1, 11)]   
     if parameter == "success":
         for i in range(len(files)):
-            plt.plot(success_rates[i], label=labels[i])
+            plt.plot(x, success_rates[i], label=labels[i])
         plt.title("Attack Success Rate "+ title)
         plt.ylabel("Success Rate")
     elif parameter == "error_normal":
         for i in range(len(files)):
-            plt.plot(mean_errors_normal[i], label=labels[i])
+            plt.plot(x, mean_errors_normal[i], label=labels[i])
         plt.title("Mean Error"+ title)
         plt.ylabel("Mean Error")
     elif parameter == "error_actual":
         for i in range(len(files)):
-            plt.plot(mean_errors_actual[i], label=labels[i])
+            plt.plot(x, mean_errors_actual[i], label=labels[i])
         plt.title("Mean Error Actual"+ title)
         plt.ylabel("Mean Error Actual")
     plt.xlabel("Number of fake APs")
@@ -263,9 +265,9 @@ def analyse_attack_scenarios(comparison: str, files: list[str]):
 
 if __name__ == '__main__':
 
-    # analyse_K_L_eval("results/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
-    # analyse_K_L_eval("results/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
-    # analyse_K_L_eval("results/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_determination/K_L_evaluation_using_SC_method_15_15_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_determination/K_L_evaluation_using_UC_method_15_25_0.1_.csv")
+    # analyse_K_L_eval("results/K_L_determination/K_L_evaluation_using_VT_method_15_0.01_0.1_.csv")
 
 
     basic_files = ["results/corrupted_datasets/basic_knn_on_corrupted_dataset_scenario1_using_SC_method.csv",

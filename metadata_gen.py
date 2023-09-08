@@ -3,32 +3,6 @@ import os
 import numpy as np
 from radio_map import RadioMap
 
-def load_blacklist(trning_r_m) -> list[list]:
-    """ Load the blacklist from the file """
-    if not os.path.isfile("data/blacklist.txt"):
-        with open("data/blacklist.txt", "w") as file:
-            aps_blacklist = []
-            all_rss = trning_r_m.get_rss()
-            number_of_aps = len(all_rss[0])
-            for ap_index in range(number_of_aps):
-                print(f"Generating blacklist for AP {ap_index}")
-                ap_blacklist = [i for i in range(number_of_aps)]
-                for rss_index, rss in enumerate(all_rss):
-                    if rss[ap_index] != 100:
-                        for blacklisted_ap in ap_blacklist:
-                            if all_rss[rss_index][blacklisted_ap] != 100:
-                                ap_blacklist.remove(blacklisted_ap)
-                aps_blacklist.append(ap_blacklist)
-            file.write("\n".join([",".join([str(ap_index) for ap_index in ap_blacklist]) for ap_blacklist in aps_blacklist]))
-            return aps_blacklist
-    else:
-        aps_blacklist = []
-        with open("data/blacklist.txt", "r") as file:
-            for line in file:
-                ap_blacklist = [int(ap) for ap in line.strip().split(",")]
-                aps_blacklist.append(ap_blacklist)
-        return aps_blacklist
-
 def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
     """ Load the ap_max from the file or generate it """
     if not os.path.isfile("metadata/ap_max_dist.txt"):
@@ -51,7 +25,7 @@ def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
                         distance = np.linalg.norm(trning_pos_matrix[valid_fingerprint_indexes[i]] - trning_pos_matrix[valid_fingerprint_indexes[j]])
                         max_ap_distance = max(max_ap_distance, distance)
                     positions.append(trning_pos_matrix[valid_fingerprint_indexes[i]])
-                    rss_weights.append(1.0 / np.abs(ap_rssi_values[valid_fingerprint_indexes[i]]))
+                    rss_weights.append(1.0 / (np.abs(ap_rssi_values[valid_fingerprint_indexes[i]]) + 1))
                 if len(positions) == 0:
                     center_point = np.array([0, 0, 0])
                 else:

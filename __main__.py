@@ -6,6 +6,7 @@ import csv
 from radio_map import RadioMap
 import knn_algorithm as knn
 from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
 from metadata_gen import load_ap_max
 
 ### Simulations ###
@@ -297,7 +298,7 @@ def simu02_all():
         data.append([method + " (secure)", k_l_values[method], np.mean(errors), np.std(errors), np.max(errors), np.min(errors), np.median(errors), round(failed*100/len(vld_r_m),2), round((sum_durations/len(vld_r_m))*1000,2)])
 
 
-    csv_file = "results/All_Methods_Performances_Evaluation"
+    csv_file = "results/All_Methods_Performances_Evaluation.csv"
 
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -622,8 +623,10 @@ def simu24_single_test_OF():
     method = "UC"
     filter_type = "OF"
     tolerance = 0
-    n_fake_aps = 4
+    n_fake_aps = 5
     scenario = "scenario1"
+    # fgpt_ids = [i for i in range(0, len(vld_r_m))]
+    fgpt_ids = [919]
 
     k = k_l_values[method][0]
     limit = k_l_values[method][1]
@@ -634,12 +637,15 @@ def simu24_single_test_OF():
 
     errors = []
     failed = 0
-    for fgpt_id in range(len(vld_X_r_m)):
+    id_error = []
+    for fgpt_id in fgpt_ids:
         print(round((fgpt_id / len(vld_X_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_X_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, limit, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
         normal_error = knn.find_position_error(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
+        print(knn.find_position(k, limit, trning_r_m, vld_X_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance))
         if error != None and (np.round(error, 3) != np.round(normal_error, 3)).any():
             errors.append(error)
+            id_error.append(fgpt_id)
         else:
             failed += 1
     
@@ -654,7 +660,8 @@ def simu24_single_test_OF():
     """)
     print("Failed: ", failed, "/", len(vld_X_r_m), " -> ", round(failed*100 / len(vld_X_r_m),2))
 
-    print(errors[:10])
+    if len(errors) < 15:
+        print(errors, id_error)
 
 def simu23_single_test_PF():
     """ find the error for a k, and limit combination."""    
@@ -745,7 +752,7 @@ def display_AP_fingerprints(id_AP: int):
 
 def visualize_ap_centers():
     """ Temporary function to try things. """
-    fgpt_ids = [745,144,10,268]
+    fgpt_ids = [919]
     scenario = "scenario2"
     file_index = 8
 
@@ -760,16 +767,21 @@ def visualize_ap_centers():
             if rss != 100:
                 if centers[i,0] != 0:
                     plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+                    circle = Circle((centers[i,0], centers[i,1]), max_dist[i] / 2, color='red', fill=False)
+                    plt.gca().add_patch(circle)
         plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+        
 
     for fgpt_id in fgpt_ids:
         fgpt = vld_X_r_m.get_fingerprint(fgpt_id)
         max_dist, centers = load_ap_max(trning_r_m)
-        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Valid fingerprint : " + str(fgpt_id))
+        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Corrupted fingerprint : " + str(fgpt_id))
         for i, rss in enumerate(fgpt.get_rss()):
             if rss != 100:
                 if centers[i,0] != 0:
                     plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+                    circle = Circle((centers[i,0], centers[i,1]), max_dist[i] / 2, color='red', fill=False)
+                    plt.gca().add_patch(circle)
         plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
 
     plt.show()
@@ -867,21 +879,21 @@ if __name__ == '__main__':
     # simu02_UC_method()
     # simu02_VT_method()
 
-    # simu02_all()
+    simu02_all()
 
     ##############################
 
     ## Test Basic KNN-Algo on Corrupted Data : SIMU 1X
 
     ## scenario1
-    simu11_scenario1_SC_method()
-    simu11_scenario1_UC_method()
-    simu11_scenario1_VT_method()
+    # simu11_scenario1_SC_method()
+    # simu11_scenario1_UC_method()
+    # simu11_scenario1_VT_method()
 
     ## scenario2
-    simu12_scenario2_SC_method()
-    simu12_scenario2_UC_method()
-    simu12_scenario2_VT_method()
+    # simu12_scenario2_SC_method()
+    # simu12_scenario2_UC_method()
+    # simu12_scenario2_VT_method()
 
     ##############################
     
@@ -893,8 +905,8 @@ if __name__ == '__main__':
     ## Scenario 1/2
 
     # Overall filter : SIMU 21
-    simu21_scenario1_UC_method_secu()
-    simu21_scenario2_UC_method_secu()
+    # simu21_scenario1_UC_method_secu()
+    # simu21_scenario2_UC_method_secu()
 
     # Precise filter : SIMU 22
     # simu22_scenario1_UC_method_secu()

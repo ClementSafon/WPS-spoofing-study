@@ -3,6 +3,7 @@ import numpy as np
 from radio_map import RadioMap
 from metadata_gen import load_ap_max
 from fingerprint import Fingerprint
+import time
 
 duration = 0
 
@@ -180,7 +181,9 @@ def find_position_error(k_neighbors: int, limit: int, trning_r_m: RadioMap, trgt
     Return None if the limit can't be found."""
 
     global duration
+    td = time.time()
     predicted_position = find_position(k_neighbors, limit, trning_r_m, trgt_fgpt, method, filter_type, tolerance)
+    duration = time.time() - td
     if (predicted_position == np.array([0,0,0])).all():
         return None
     actual_position = trgt_fgpt.get_position().copy()
