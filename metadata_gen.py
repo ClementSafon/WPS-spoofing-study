@@ -30,7 +30,7 @@ def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
                     center_point = np.array([0, 0, 0])
                 else:
                     center_point = np.average(positions, axis=0, weights=rss_weights)
-                
+
                 ap_max_data.append((max_ap_distance, center_point))
                 print(f"Max distance for AP {ap_index} is {max_ap_distance} centered at {center_point}")
             data_lines = []
@@ -42,7 +42,7 @@ def load_ap_max(trning_r_m: RadioMap) -> (np.ndarray, np.ndarray):
         with open("metadata/ap_max_dist.txt", "r") as file:
             aps_max_diameters, aps_center_points = [], []
             for line in file:
-                max_dist, x, y, z = line.strip().split(",")
+                max_dist, x_coord, y_coord, z_coord = line.strip().split(",")
                 aps_max_diameters.append(float(max_dist))
-                aps_center_points.append(np.array([float(x), float(y), float(z)]))
+                aps_center_points.append(np.array([float(x_coord), float(y_coord), float(z_coord)]))
         return np.array(aps_max_diameters), np.array(aps_center_points)

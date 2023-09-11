@@ -1,9 +1,8 @@
 """ Module to plot radio maps. """
 import matplotlib.pyplot as plt
 import numpy as np
-from radio_map import RadioMap
 
-def plot_radio_map(radio_map: RadioMap, new_figure=False, title=None, color="b", marker="x", alpha=1) -> None:
+def plot_radio_map(radio_map, new_figure=False, title=None, color="b", marker="x", alpha=1) -> None:
     """ Plot a radio map."""
     pos_2d = radio_map.get_position_matrix()[:, :2]
     if new_figure:
