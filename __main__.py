@@ -763,7 +763,7 @@ def display_AP_fingerprints(id_AP: int):
     plt.show()
 
 def visualize_ap_centers():
-    """ Temporary function to try things. """
+    """ Plot the filtering algorithm principle. """
     fgpt_ids = [919]
     scenario = "scenario2"
     file_index = 8
@@ -799,64 +799,75 @@ def visualize_ap_centers():
     plt.show()
     return
 
-def tmp():
-    """ Temporary function to try things."""
-    scenario = "scenario1"
-    file_index = 4
-    method = "UC"
-    filter_type = "OF"
-    tolerance = 0
+def visualize_ap_centers_vs_fingerprint():
+    """ Plot the ap estimated center and the corresponding fingerprints. """
+    ap_row = 125
+    fgpt_positions = []
 
-    k = k_l_values[method][0]
-    limit = k_l_values[method][1]
+    for fgpt in vld_r_m.get_fingerprints():
+        if fgpt.get_rss()[ap_row] != 100:
+            fgpt_positions.append(fgpt.get_position())
+    
+    graph.plot_radio_map(trning_r_m, title="Fgpt positions for AP " + str(ap_row), alpha=0.4)
+    for position in fgpt_positions:
+        plt.scatter(position[0], position[1], marker='o', color='green')
+    ap_diameters, estimated_centers = load_ap_max(trning_r_m)
+    ap_diameter , estimated_center = ap_diameters[ap_row], estimated_centers[ap_row]
+    plt.scatter(estimated_center[0], estimated_center[1], marker='x', color='red')
+    circle = Circle((estimated_center[0], estimated_center[1]), ap_diameter / 2, color='red', fill=False)
+    plt.gca().add_patch(circle)
+
+    plt.show()
+
+def tmp():
+    """ Temporary function """
+    fgpt_ids = [919, 157, 753, 113]
+    scenario = "scenario2"
+    file_index = 8
 
     vld_x_r_m = RadioMap()
     vld_x_r_m.load_from_csv('datasets/corrupted/' + scenario + '/ValidationData_' + str(file_index) + '.csv')
 
-    n_attack_successfull = 0
-    n_attack_failed = 0
-    positioning_failed = 0
-    normal_positioning_failed = 0
-    distance_error_normal_rss = []
-    distance_error_actual_position = []
-    total_of_attack = 0
-    print('ValidationData_' + str(file_index) + '.csv')
-    for fgpt_id in range(len(vld_x_r_m)):
-        print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
+    def grade_calculation(centers):
+        grade = 0
+        for i in range(len(centers)):
+            for j in range(i+1, len(centers)):
+                grade += np.linalg.norm(centers[i] - centers[j])/len(centers)
+        return round(grade, 2)
+
+    for fgpt_id in fgpt_ids:
+        fgpt = vld_r_m.get_fingerprint(fgpt_id)
+        max_dist, centers = load_ap_max(trning_r_m)
+        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Valid fingerprint : " + str(fgpt_id))
+        sorted_centers = []
+        for i, rss in enumerate(fgpt.get_rss()):
+            if rss != 100:
+                if centers[i,0] != 0:
+                    plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+                    sorted_centers.append(centers[i])
+        grade = grade_calculation(sorted_centers)
+        plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+        plt.title("Valid fingerprint : " + str(fgpt_id) + "\nGrade : " + str(grade))
+
+
+    for fgpt_id in fgpt_ids:
         fgpt = vld_x_r_m.get_fingerprint(fgpt_id)
-        predicted_position = knn.find_position(k, limit, trning_r_m, fgpt, method, filter_type, tolerance)
-        normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
-        actual_position = fgpt.get_position()
-        null_pred_pos = (predicted_position == [0,0,0]).all()
-        null_norm_pos = (normal_predicted_position == [0,0,0]).all()
+        max_dist, centers = load_ap_max(trning_r_m)
+        graph.plot_radio_map(trning_r_m, new_figure=True, alpha=0.3, title="Corrupted fingerprint : " + str(fgpt_id))
+        sorted_centers = []
+        for i, rss in enumerate(fgpt.get_rss()):
+            if rss != 100:
+                if centers[i,0] != 0:
+                    plt.scatter(centers[i,0], centers[i,1], marker='x', color='red')
+                    sorted_centers.append(centers[i])
+        grade = grade_calculation(sorted_centers)
+        plt.scatter(fgpt.get_position()[0], fgpt.get_position()[1], marker='o', color='green')
+        plt.title("Corrupted fingerprint : " + str(fgpt_id) + "\nGrade : " + str(grade))
+
+    plt.show()
+    return
 
 
-        if null_norm_pos:
-            normal_positioning_failed += 1
-        if null_pred_pos:
-            positioning_failed += 1
-            n_attack_failed += 1
-        else:
-            if (predicted_position != normal_predicted_position).any():
-                n_attack_successfull += 1
-                if not null_norm_pos and not null_pred_pos:
-                    predicted_position[2] *= 3
-                    normal_predicted_position[2] *= 3
-                    actual_position[2] *= 3
-                    distance_error_normal_rss.append(np.linalg.norm(predicted_position - normal_predicted_position))
-                    distance_error_actual_position.append(np.linalg.norm(predicted_position - actual_position))
-                    print(np.linalg.norm(actual_position - normal_predicted_position), np.linalg.norm(predicted_position - actual_position))
-            else:
-                # print("#", np.linalg.norm(actual_position - normal_predicted_position), np.linalg.norm(predicted_position - actual_position))
-                n_attack_failed += 1
-            # print(predicted_position, normal_predicted_position, (predicted_position != normal_predicted_position).any())
-
-        total_of_attack = len(vld_x_r_m)
-
-    print(distance_error_actual_position[:10])
-
-    print(["ValidationData_" + str(file_index) + '.csv', n_attack_successfull, n_attack_failed, positioning_failed,
-           normal_positioning_failed, np.mean(distance_error_normal_rss), np.mean(distance_error_actual_position), total_of_attack])
 
 ##############################################################################################################
 
@@ -939,8 +950,10 @@ if __name__ == '__main__':
 
     # display_ap_fingerprints(147)
 
-    visualize_ap_centers()
+    # visualize_ap_centers()
 
-    # tmp()
+    # visualize_ap_centers_vs_fingerprint()
+
+    tmp()
 
     print("Executed in ", time.time() - td, " seconds")

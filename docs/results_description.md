@@ -2,7 +2,7 @@
 
 # (K,L) Determination
 
-First, we need to determine the values of K and L that yield the best results for the model. To do this, I test several combinations of K and L values for each algorithm and store the results in the K*L_determination folder. For each algorithm (SC, UC, VT), I test K and L values from a minimum to a maximum value with a preset tolerance on the number of acceptable failures (If you're not familiar with why the positioning can fail, please refer too [the description of the algorythmes](algorythme_description.md)). The results are stored in a CSV file named \*\*K_L_evaluation_using*[...]\_method\__{K_max}_\__{L_max}_\__{tolerance}_.csv\*\*
+First, we need to determine the values of K and L that yield the best results for the model. To do this, I test several combinations of K and L values for each algorithm and store the results in the K*L_determination folder. For each algorithm (SC, UC, VT), I test K and L values from a minimum to a maximum value with a preset tolerance on the number of acceptable failures (If you're not familiar with why the positioning can fail, please refer too [the description of the algorithms](algorithm_description.md)). The results are stored in a CSV file named \*\*K_L_evaluation_using*[...]\_method\__{K_max}_\__{L_max}_\__{tolerance}_.csv\*\*
 
 For each K,L combination, the file contains the following information :
 

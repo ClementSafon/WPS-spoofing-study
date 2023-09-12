@@ -18,7 +18,7 @@ The objective of the algorithm is to predict a position associated with a finger
 
 We can dress up many scenarios of attacks, but here we went for two simple one: the **_Random Attack_** and the **_Targeted Attack_**.
 
-The **_Random Attack_** is the simplest one. The attacker will send fake beacons with random RSS values. The goal is to see how the algorythme will react to this kind of attack. The sender MAC address of the fake beacons is randomly chosen in the list of the MAC addresses of the APs in the database.
+The **_Random Attack_** is the simplest one. The attacker will send fake beacons with random RSS values. The goal is to see how the algorithm will react to this kind of attack. The sender MAC address of the fake beacons is randomly chosen in the list of the MAC addresses of the APs in the database.
 
 The **_Targeted Attack_** is a bit more complex. The attacker will send fake beacons with RSS values that are close to the ones of the APs that are the nearest neighbors of the user. Here, this scenario is more unlikly to happend in real conditions due to signal reflexions... So this case is basically the worst scenario we could ever encounter.
 

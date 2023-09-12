@@ -62,8 +62,8 @@ def analyse_k_l_eval(filename: str):
 
     ax1.set_title('Mean values of K and L for different K and L values')
 
-def algorythme_comparison():
-    """ Compare the different algorythms."""
+def algorithm_comparison():
+    """ Compare the different algorithms."""
     filename = "results/All_Methods_Performances_Evaluation.csv"
     with open(filename, "r") as file:
         reader = csv.reader(file)
@@ -285,6 +285,6 @@ if __name__ == '__main__':
 
     analyse_attack_scenarios("method", all_files)
 
-    # algorythme_comparison()
+    # algorithm_comparison()
 
     plt.show()
