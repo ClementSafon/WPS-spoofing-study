@@ -323,6 +323,8 @@ def simu1x_scenariox_xx_method(scenario: str, method: str):
     """ Generic function to find some results for a corrupted validation dataset."""
     data = [["FILE", "ATTACK_SUCCESSFUL", "ATTACK_FAILED", "POSITIONING_FAIL", "NORMAL_POSITIONING_FAIL",
              "MEAN_ERROR_NORMAL_RSS", "MEAN_ERROR_ACTUAL_POSITION", "TOTAL_OF_ATTACK"]]
+    
+    raw_data = [["FILE", "ROW", 'ESTIMATED POSITION', 'REAL POSITION']]
 
     k = k_l_values[method][0]
     limit = k_l_values[method][1]
@@ -343,6 +345,7 @@ def simu1x_scenariox_xx_method(scenario: str, method: str):
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             predicted_position = knn.find_position(k, limit, trning_r_m, vld_x_r_m.get_fingerprint(fgpt_id), method)
             normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method)
+            raw_data.append(["ValidationData_" + str(file_index) + '.csv', fgpt_id, predicted_position, vld_x_r_m.get_fingerprint(fgpt_id).get_position()])
             actual_position = vld_x_r_m.get_fingerprint(fgpt_id).get_position()
             null_pred_pos = (predicted_position == [0,0,0]).all()
             null_norm_pos = (normal_predicted_position == [0,0,0]).all()
@@ -369,7 +372,10 @@ def simu1x_scenariox_xx_method(scenario: str, method: str):
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data)
-    print(f"CSV file '{csv_file}' created successfully.")
+    with open("results/corrupted_datasets/raw_data/basic_knn_on_corrupted_dataset_" + scenario + "_using_" + method + "_method.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(raw_data)
+    print(f"CSV files '{csv_file}' created successfully.")
 
 # Scenario 1
 def simu11_scenario1_sc_method():
@@ -467,6 +473,8 @@ def simu2x_scenariox_xx_method(scenario: str, method: str, filter_type: str, tol
     """ Generic function to find some results for a corrupted validation dataset."""
     data = [["FILE", "ATTACK_SUCCESSFUL", "ATTACK_FAILED", "POSITIONING_FAIL", "NORMAL_POSITIONING_FAIL",
              "MEAN_ERROR_NORMAL_RSS", "MEAN_ERROR_ACTUAL_POSITION", "TOTAL_OF_ATTACK"]]
+    
+    raw_data = [["FILE", "ROW", 'ESTIMATED POSITION', 'REAL POSITION']]
 
     k = k_l_values[method][0]
     limit = k_l_values[method][1]
@@ -487,6 +495,7 @@ def simu2x_scenariox_xx_method(scenario: str, method: str, filter_type: str, tol
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             predicted_position = knn.find_position(k, limit, trning_r_m, vld_x_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
             normal_predicted_position = knn.find_position(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
+            raw_data.append(["ValidationData_" + str(file_index) + '.csv', fgpt_id, predicted_position, vld_x_r_m.get_fingerprint(fgpt_id).get_position()])
             actual_position = vld_x_r_m.get_fingerprint(fgpt_id).get_position()
             null_pred_pos = (predicted_position == [0,0,0]).all()
             null_norm_pos = (normal_predicted_position == [0,0,0]).all()
@@ -517,7 +526,10 @@ def simu2x_scenariox_xx_method(scenario: str, method: str, filter_type: str, tol
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data)
-    print(f"CSV file '{csv_file}' created successfully.")
+    with open("results/corrupted_datasets/raw_data/secure_knn_on_corrupted_dataset_" + scenario + "_using_" + method + "_method.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(raw_data)
+    print(f"CSV files '{csv_file}' created successfully.")
 
 # Overall filter : SIMU 21
 def simu21_scenario1_uc_method_secu():
@@ -907,14 +919,14 @@ if __name__ == '__main__':
     ## Test Basic KNN-Algo on Corrupted Data : SIMU 1X
 
     ## scenario1
-    # simu11_scenario1_sc_method()
-    # simu11_scenario1_uc_method()
-    # simu11_scenario1_vt_method()
+    simu11_scenario1_sc_method()
+    simu11_scenario1_uc_method()
+    simu11_scenario1_vt_method()
 
     ## scenario2
-    # simu12_scenario2_sc_method()
-    # simu12_scenario2_uc_method()
-    # simu12_scenario2_vt_method()
+    simu12_scenario2_sc_method()
+    simu12_scenario2_uc_method()
+    simu12_scenario2_vt_method()
 
     ##############################
 
@@ -926,8 +938,8 @@ if __name__ == '__main__':
     ## Scenario 1/2
 
     # Overall filter : SIMU 21
-    # simu21_scenario1_uc_method_secu()
-    # simu21_scenario2_uc_method_secu()
+    simu21_scenario1_uc_method_secu()
+    simu21_scenario2_uc_method_secu()
 
     # Precise filter : SIMU 22
     # simu22_scenario1_uc_method_secu()
