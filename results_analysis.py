@@ -3,6 +3,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import LinearLocator
+from matplotlib import cm
 
 
 def analyse_k_l_eval(filename: str):
@@ -44,6 +45,13 @@ def analyse_k_l_eval(filename: str):
 
     min_l_value = l_values[min_l_index]
     min_k_value = k_values[min_k_index]
+
+    
+    X, Y = np.meshgrid(k_values, l_values)
+
+    ax1.plot_surface(X, Y, mean_values, cmap=cm.coolwarm,
+                        linewidth=0, antialiased=False)
+
 
     ax1.zaxis.set_major_locator(LinearLocator(10))
     ax1.zaxis.set_major_formatter('{x:.02f}')
@@ -123,7 +131,7 @@ def plot_attack_failures_results(files: list[str]):
         fails_rate_due_to_attacks = []
         for line in data[1:]:
             fails_rate_due_to_attacks.append(float(line[3]))
-        label = " ".join(file.split("_")[5:8])
+        label = " ".join(filename.split("_")[5:8])
         plt.plot(number_of_fake_aps, fails_rate_due_to_attacks, label=label, linestyle='dashed')
     plt.title("Attack Failures")
     plt.xlabel("Number of fake APs")
@@ -283,8 +291,8 @@ if __name__ == '__main__':
     # analyse_attack_scenarios("method", secure_files)
     # analyse_attack_scenarios("scenario", secure_files)
 
-    analyse_attack_scenarios("method", all_files)
+    # analyse_attack_scenarios("method", all_files)
 
-    # algorithm_comparison()
+    algorithm_comparison()
 
     plt.show()

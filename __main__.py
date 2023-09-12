@@ -179,7 +179,7 @@ def simu02_sc_method():
     for fgpt_id in range(len(vld_r_m)):
         print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
         error = knn.find_position_error(k, limit, trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method="SC")
-        sum_durations += knn.duration
+        sum_durations += knn.DURATION
         if error is not None:
             errors.append(error)
         else:
@@ -274,7 +274,7 @@ def simu02_all():
         for fgpt_id in range(len(vld_r_m)):
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             error = knn.find_position_error(k_l_values[method][0], k_l_values[method][1], trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method=method)
-            sum_durations += knn.duration
+            sum_durations += knn.DURATION
             if error is not None:
                 errors.append(error)
             else:
@@ -295,7 +295,7 @@ def simu02_all():
             print(round((fgpt_id / len(vld_r_m)) * 100,1), " "*(4-len(str(round((fgpt_id / len(vld_r_m)) * 100,1)))) + "%", end="\r")
             k_l_value = k_l_values[method]
             error = knn.find_position_error(k_l_value[0], k_l_value[1], trning_r_m, vld_r_m.get_fingerprint(fgpt_id), method, filter_type, tolerance)
-            sum_durations += knn.duration
+            sum_durations += knn.DURATION
             if error is not None:
                 errors.append(error)
             else:
@@ -672,9 +672,6 @@ def simu24_single_test_of():
     """)
     print("Failed: ", failed, "/", len(vld_x_r_m), " -> ", round(failed*100 / len(vld_x_r_m),2))
 
-    if len(errors) < 15:
-        print(errors, id_error)
-
 def simu23_single_test_pf():
     """ find the error for a k, and limit combination."""
 
@@ -716,7 +713,7 @@ def simu23_single_test_pf():
 ##############################################################################################################
 
 # Other simulations
-def display_AP_fingerprints(id_AP: int):
+def display_ap_fingerprints(id_AP: int):
     """ Display the fingerprints of the AP with the id id_AP. """
     x_coords, y_coords = [], []
     rss_values = []
@@ -954,6 +951,6 @@ if __name__ == '__main__':
 
     # visualize_ap_centers_vs_fingerprint()
 
-    tmp()
+    # tmp()
 
     print("Executed in ", time.time() - td, " seconds")
