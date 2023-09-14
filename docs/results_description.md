@@ -63,6 +63,16 @@ Following that, we have the positioning failures due to attacks, which is the nu
 
 **Warning** : The mean errors in these files represent the average of all errors when the **attack is successful.**
 
+**Important** : A raw data folder is also available. It contains the raw data used to generate the results. The data is stored in CSV files. Each file contains the following information:
+
+- The name of the corrupted dataset.
+- The name of the fingerprint (row).
+- The estimated position of the fingerprint.
+- The actual position of the fingerprint.
+
+The position is represented by a tuple (x, y, z). However, here **z** is not in meters but in **floor number**. For example, if the fingerprint is on the 3rd floor, the z value will be 3. Also when you want to compare the estimated position to the actual position, you will probably need to convert the z value to meters by gussing the floor height.
+Finally, when a position is not available due to the detection of an attack or a failure, the position is set to (0, 0, 0).
+
 ## Graphs
 
 We can create graphs to visualize the results of the algorithms against corrupted fingerprints.
